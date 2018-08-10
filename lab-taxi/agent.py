@@ -4,7 +4,7 @@ from collections import defaultdict
 
 class Agent:
 
-    def __init__(self, alpha = 1e-2, gamma=0.1, lambdA=1, epsilon=1e5, nA=6, update_rule='Q_learning'):
+    def __init__(self, alpha = 1e-2, gamma=0.1, epsilon=1e5, nA=6, update_rule='Q_learning'):
         """ Initialize agent.
 
         Params
@@ -21,11 +21,6 @@ class Agent:
         self.t = 0
         # Q learning or expected sarsa
         self.update_rule = update_rule
-        # parameters for eligibility trace
-        self.E = defaultdict(lambda: np.zeros(self.nA))
-        self.lambdA = lambdA
-        # next action
-        self.action = None
 
     def select_action(self, state):
         """ Given the state, select an action.
@@ -38,9 +33,6 @@ class Agent:
         =======
         - action: an integer, compatible with the task's action space
         """
-        return self.action if self.action else self.epsilon_greedy(state)
-
-    def epsilon_greedy(self, state):
         return np.random.choice(np.arange(self.nA)) if np.random.uniform() < self.epsilon else np.argmax(self.Q[state])
 
     def step(self, state, action, reward, next_state, done):
@@ -54,18 +46,8 @@ class Agent:
         - next_state: the current state of the environment
         - done: whether the episode is complete (True or False)
         """
-        next_action = None
-        if done:
-            delta = reward - self.Q[state][action]
-        else:
-            next_action = self.epsilon_greedy(next_state)
-            delta = reward + self.Q[next_state][next_action] - self.Q[state][action]
-        self.E[state][action] += 1
-        for s in self.E.keys():
-            for a in range(self.nA):
-                self.Q[s][a] += self.alpha * delta * self.E[s][a]
-                self.E[s][a] *= self.lambdA * self.gamma
-        self.action = next_action
+        delta = reward - self.gamma * self.Q[state][action] + (0 if done else np.max(self.Q[next_state]))
+        self.Q[state][action] += self.alpha * delta
         self.t += 1
         if self.t % 1e4 == 0:
             self.epsilon -= 0.01
