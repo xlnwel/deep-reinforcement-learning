@@ -3,7 +3,7 @@ from collections import defaultdict
 
 class Agent:
 
-    def __init__(self, alpha = 1e-2, gamma=0.1, c = 1e5, nA=6, update_rule='Q_learning'):
+    def __init__(self, alpha = 1e-2, gamma=0.1, epsilon = 1e5, nA=6, update_rule='Q_learning'):
         """ Initialize agent.
 
         Params
@@ -15,8 +15,7 @@ class Agent:
         self.alpha = alpha
         self.gamma = gamma
         # variables for UCB
-        self.c = c
-        self.N = defaultdict(lambda: np.zeros(self.nA))
+        self.epsilon = epsilon
         self.t = 0
         # Q learning or expected sarsa
         self.update_rule = update_rule
@@ -32,9 +31,10 @@ class Agent:
         =======
         - action: an integer, compatible with the task's action space
         """
-        ucb = lambda a: a if self.N[state][a] == 0 else \
-            self.Q[state][a] + self.c * np.sqrt(np.log(self.t) / self.N[state][a])
-        return np.argmax([ucb(a) for a in range(self.nA)])
+        if np.random.uniform() < self.epsilon:
+            return np.random.choice(np.arange(self.nA))
+        else:
+            return np.argmax(self.Q[state])
 
     def step(self, state, action, reward, next_state, done):
         """ Update the agent's knowledge, using the most recently sampled tuple.
@@ -47,13 +47,11 @@ class Agent:
         - next_state: the current state of the environment
         - done: whether the episode is complete (True or False)
         """
-        expected_sarsa = lambda s: self.gamma * np.average(self.Q[s],
-                                                           weights=self.Q[s] if self.Q[s].any() else None)
-        Q_learning = lambda s: self.gamma * np.max(self.Q[s])
+        expected_sarsa = lambda s: self.epsilon * np.mean(self.Q[s]) + (1-self.epsilon) * np.max(self.Q[s])
+        Q_learning = lambda s: np.max(self.Q[s])
         target_value = reward if done else \
-            reward + (Q_learning(next_state) if self.update_rule == 'Q_learning' else expected_sarsa(next_state))
+            reward + self.gamma * (Q_learning(next_state) if self.update_rule == 'Q_learning' else expected_sarsa(next_state))
         self.Q[state][action] = self.Q[state][action] + self.alpha * (target_value - self.Q[state][action])
-        self.N[state][action] += 1
         self.t += 1
         if self.t % 1e4 == 0:
-            self.c /= 2
+            self.epsilon -= 0.01
