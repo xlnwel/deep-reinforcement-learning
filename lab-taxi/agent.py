@@ -46,7 +46,7 @@ class Agent:
         - next_state: the current state of the environment
         - done: whether the episode is complete (True or False)
         """
-        delta = reward - self.gamma * self.Q[state][action] + (0 if done else np.max(self.Q[next_state]))
+        delta = reward - self.Q[state][action] + self.gamma * (0 if done else np.max(self.Q[next_state]))
         self.Q[state][action] += self.alpha * delta
         self.t += 1
         if self.t % 1e4 == 0:
