@@ -18,10 +18,6 @@ class Agent:
         self.c = c
         self.N = defaultdict(lambda: np.zeros(self.nA))
         self.t = 0
-        # number of episodes is passed
-        self.n_eps = 1
-        self.c_decay = False
-        self.alpha_decay = False
         # Q learning or expected sarsa
         self.update_rule = update_rule
 
@@ -59,15 +55,5 @@ class Agent:
         self.Q[state][action] = self.Q[state][action] + self.alpha * (target_value - self.Q[state][action])
         self.N[state][action] += 1
         self.t += 1
-        if done:
-            self.n_eps += 1
-            self.c_decay = True
-            self.alpha_decay = True
-
-        if self.c_decay and self.t % 2e4 == 0:
-            self.c /= 5
-            self.c_decay = False
-
-        # if self.alpha_decay and self.n_eps % 1000 == 0:
-        #     self.alpha = max(self.alpha/2, 0.1)
-        #     self.alpha = False
+        if self.t % 1e4 == 0:
+            self.c /= 2

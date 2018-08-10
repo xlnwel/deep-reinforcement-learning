@@ -5,8 +5,8 @@ import numpy as np
 
 env = gym.make('Taxi-v2')
 alphas = [0.8, 1]
-cs = [1e5, 1e6]
-gammas = [0.1, 0.5, 1]
+cs = [1e5]
+gammas = [0.1, 0.5]
 for alpha in alphas:
     for gamma in gammas:
         for c in cs:
