@@ -2,11 +2,13 @@
 
 ### Cannot solve :(
 
-I've tried to implement it in SARSA, Q-learning, even eligibility trace, and tuned hyperparameters for like a day… The best result I obtained is around 9.5, still 0.2 away from solving. I decided to leave this to another day:(. Here's something I've tried
+I've tried to implement it in expected SARSA, Q-learning, even SARSA($\lambda$), and tuned hyperparameters for like a day… The best result I obtained is around 9.5, still 0.2 away from solving. I decided to leave this to another day:(. Here's something I've tried
 
 1. For policy strategy, UCB works worse than epsilon greedy. That may be because $c$ in UCB is harder to tune than $\epsilon$. 
-2. I've tried to decay $\epsilon$ every many episodes or every many steps. The latter one works better than the former one
-3. I've fine tuned the hyperparameters for a day, $\alpha,\gamma$ is obviously corelated with each other, $\epsilon$ is related to the decay rate and the time to decay. These make it hard to locate a precise area of good hyperparamter values
+2. For algorithm, Q-learning works obviously better than expected SARSA. This is because the bad actions always have large negative expected values, SARSA($\lambda$) is extremely slow for this problem, more than 100x slower than the other two. It is a great pain to tune hyperparameters on SARSA($\lambda$), so I give up further trying.
+3. I've tried to decay $\epsilon$ every many episodes or every many steps. The latter one works better than the former one
+4. I've fine tuned the hyperparameters for a day, $\alpha,\gamma$ is obviously corelated with each other, $\epsilon$ is related to the decay rate and the time to decay. These make it hard to locate a precise area of good hyperparamter values
+5. I've tried to use model ensemble, combining two Q tables with different $\alpha, \gamma$ pairs. This didn't improve the results:( This might be because I truncated the precision of the hyperparameters, but I don't think it would gain much improvment even if I retained the precision.
 
 ### Getting Started
 
