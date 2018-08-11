@@ -1,5 +1,13 @@
 # Taxi Problem
 
+### Cannot solve :(
+
+I've tried to implement it in SARSA, Q-learning, even eligibility trace, and tuned hyperparameters for like a day… The best result I obtained is around 9.5, still 0.2 away from solving. I decided to leave this to another day:(. Here's something I've tried
+
+1. For policy strategy, UCB works worse than epsilon greedy. That may be because $c$ in UCB is harder to tune than $\epsilon$. 
+2. I've tried to decay $\epsilon$ every many episodes or every many steps. The latter one works better than the former one
+3. I've fine tuned the hyperparameters for a day, $\alpha,\gamma$ is obviously corelated with each other, $\epsilon$ is related to the decay rate and the time to decay. These make it hard to locate a precise area of good hyperparamter values
+
 ### Getting Started
 
 Read the description of the environment in subsection 3.1 of [this paper](https://arxiv.org/pdf/cs/9905014.pdf).  You can verify that the description in the paper matches the OpenAI Gym environment by peeking at the code [here](https://github.com/openai/gym/blob/master/gym/envs/toy_text/taxi.py).

@@ -5,9 +5,9 @@ import numpy as np
 
 env = gym.make('Taxi-v2')
 iterations = 10
-alphas = np.random.uniform(size=iterations)
-gammas = np.random.uniform(size=iterations)
-epsilons = np.random.uniform(size=iterations)
+alphas = np.random.uniform(0.1, size=iterations)
+gammas = np.random.uniform(0.1, size=iterations)
+epsilons = np.random.uniform(0.1, 0.4, size=iterations)
 records = {}
 for alpha, gamma, eps in zip(alphas, gammas, epsilons):
     for update_rule in ['Q_learning']:

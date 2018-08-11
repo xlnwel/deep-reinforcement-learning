@@ -21,6 +21,7 @@ class Agent:
         self.t = 0
         # Q learning or expected sarsa
         self.update_rule = update_rule
+        self.picked = False
 
     def select_action(self, state):
         """ Given the state, select an action.
@@ -33,7 +34,9 @@ class Agent:
         =======
         - action: an integer, compatible with the task's action space
         """
-        return np.random.choice(np.arange(self.nA)) if np.random.uniform() < self.epsilon else np.argmax(self.Q[state])
+        epsilon_policy = lambda: np.random.choice(np.arange(self.nA)) if np.random.uniform() < self.epsilon else \
+            np.argmax(self.Q[state])
+        return epsilon_policy()
 
     def step(self, state, action, reward, next_state, done):
         """ Update the agent's knowledge, using the most recently sampled tuple.
@@ -50,4 +53,4 @@ class Agent:
         self.Q[state][action] += self.alpha * delta
         self.t += 1
         if self.t % 1e4 == 0:
-            self.epsilon -= 0.01
+            self.epsilon -= 0.1
