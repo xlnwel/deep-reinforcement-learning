@@ -20,12 +20,12 @@ class QNetwork(nn.Module):
         self.fc2 = nn.Linear(hidden_size1, hidden_size2)
         self.fc3 = nn.Linear(hidden_size2, action_size)
 
-        nn.init.xavier_normal_(self.fc1.weight)
-        nn.init.zeros_(self.fc1.bias)
-        nn.init.xavier_normal_(self.fc2.weight)
-        nn.init.zeros_(self.fc2.bias)
-        nn.init.xavier_normal_(self.fc3.weight)
-        nn.init.zeros_(self.fc3.bias)
+        nn.init.kaiming_normal_(self.fc1.weight)
+        nn.init.constant_(self.fc1.bias, 0)
+        nn.init.kaiming_normal_(self.fc2.weight)
+        nn.init.constant(self.fc2.bias, 0)
+        nn.init.kaiming_normal_(self.fc3.weight)
+        nn.init.constant_(self.fc3.bias, 0)
 
     def forward(self, state):
         """Build a network that maps state -> action values."""
