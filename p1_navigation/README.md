@@ -1,6 +1,10 @@
-[//]: # (Image References)
+[//]: # "Image References"
 
 [image1]: https://user-images.githubusercontent.com/10624937/42135619-d90f2f28-7d12-11e8-8823-82b970a54d7e.gif "Trained Agent"
+
+## Caution: 
+
+Because I don't have a cuda GPU, it is hard to implement deeper DQN and at the same time guarantee real-time speed. It also limits hyperparameter fine tuning, expecially for the optional challenge
 
 # Project 1: Navigation
 
