@@ -34,7 +34,7 @@ class ReplayBuffer():
 
 
 class Agent():
-    def __init__(self, state_size, action_size, batch_size=32, alpha=1e-3, gamma=0.99, tau=1e-3):
+    def __init__(self, state_size, action_size, batch_size=64, alpha=1e-4, gamma=0.99, tau=1e-3):
         # hyperparameters
         self.alpha = alpha
         self.gamma = gamma
@@ -57,13 +57,15 @@ class Agent():
     def act(self, state):
         state = state.reshape((1, -1))
         state = torch.from_numpy(state).float().to(device)
+
         self.actor_main.eval()
         with torch.no_grad():
            action = self.actor_main(state).cpu().numpy()
         self.actor_main.train()
-        action = action + np.random.normal(size=self.action_size)
+        action = action + np.random.normal(scale=0.1, size=self.action_size)
+        action = np.squeeze(action)
 
-        return np.clip(action, -2, 2)
+        return np.clip(action, -1, 1)
 
     def step(self, state, action, reward, next_state, done):
         state = state.reshape((1, -1))
@@ -77,7 +79,7 @@ class Agent():
         states, actions, rewards, next_states, dones = self.buffer.sample()
         targets = rewards + (1 - dones) * self.gamma * self.critic_target(next_states, self.actor_target(next_states)).detach()
         critic_loss = F.mse_loss(self.critic_main(states, actions), targets)
-        actor_loss = self.critic_main(states, self.actor_main(states)).mean()
+        actor_loss = -self.critic_main(states, self.actor_main(states)).mean()
         # update critic
         self.critic_optimizer.zero_grad()
         critic_loss.backward()

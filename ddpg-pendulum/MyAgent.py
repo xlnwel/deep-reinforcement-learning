@@ -34,7 +34,7 @@ class ReplayBuffer():
 
 
 class Agent():
-    def __init__(self, state_size, action_size, batch_size=32, alpha=1e-3, gamma=0.99, tau=1e-3):
+    def __init__(self, state_size, action_size, batch_size=64, actor_alpha=1e-4, critic_alpha=1e-3, gamma=0.99, tau=1e-3):
         # hyperparameters
         self.alpha = alpha
         self.gamma = gamma
@@ -51,17 +51,18 @@ class Agent():
         self.actor_target = deepcopy(self.actor_main)
         self.critic_target = deepcopy(self.critic_main)
         # optimizer
-        self.actor_optimizer = torch.optim.Adam(self.actor_main.parameters(), lr=alpha)
-        self.critic_optimizer = torch.optim.Adam(self.critic_main.parameters(), lr=alpha)
+        self.actor_optimizer = torch.optim.Adam(self.actor_main.parameters(), lr=actor_alpha)
+        self.critic_optimizer = torch.optim.Adam(self.critic_main.parameters(), lr=critic_alpha)
 
     def act(self, state):
         state = state.reshape((1, -1))
         state = torch.from_numpy(state).float().to(device)
+
         self.actor_main.eval()
         with torch.no_grad():
            action = self.actor_main(state).cpu().numpy()
         self.actor_main.train()
-        action = action + np.random.normal(size=self.action_size)
+        action = action + np.random.normal(scale=0.5, size=self.action_size)
 
         return np.clip(action, -2, 2)
 
@@ -77,7 +78,7 @@ class Agent():
         states, actions, rewards, next_states, dones = self.buffer.sample()
         targets = rewards + (1 - dones) * self.gamma * self.critic_target(next_states, self.actor_target(next_states)).detach()
         critic_loss = F.mse_loss(self.critic_main(states, actions), targets)
-        actor_loss = self.critic_main(states, self.actor_main(states)).mean()
+        actor_loss = -self.critic_main(states, self.actor_main(states)).mean()
         # update critic
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
@@ -90,8 +91,7 @@ class Agent():
         self._moving_average()
 
     def _moving_average(self):
-        with torch.no_grad()    :
-            for actor_target_param, actor_main_param in zip(self.actor_target.parameters(), self.actor_main.parameters()):
-                actor_target_param = (1 - self.tau) * actor_target_param + self.tau * actor_main_param
-            for critic_target_param, critic_main_param in zip(self.critic_target.parameters(), self.critic_main.parameters()):
-                critic_target_param = (1 - self.tau) * critic_target_param + self.tau * critic_main_param
+        for actor_target_param, actor_main_param in zip(self.actor_target.parameters(), self.actor_main.parameters()):
+            actor_target_param.data.copy_(self.tau * actor_main_param.data + (1.0 - self.tau) * actor_target_param.data)
+        for critic_target_param, critic_main_param in zip(self.critic_target.parameters(), self.critic_main.parameters()):
+            critic_target_param.data.copy_(self.tau * critic_main_param.data + (1.0 - self.tau) * critic_target_param.data)
