@@ -53,6 +53,8 @@ class Agent():
         # optimizer
         self.actor_optimizer = torch.optim.Adam(self.actor_main.parameters(), lr=alpha)
         self.critic_optimizer = torch.optim.Adam(self.critic_main.parameters(), lr=alpha)
+        # noise
+        self.noise = OUNoise(action_size)
 
     def act(self, state):
         state = state.reshape((1, -1))
@@ -62,8 +64,7 @@ class Agent():
         with torch.no_grad():
            action = self.actor_main(state).cpu().numpy()
         self.actor_main.train()
-        action = action + np.random.normal(scale=0.1, size=self.action_size)
-        action = np.squeeze(action)
+        action += self.noise.sample()
 
         return np.clip(action, -1, 1)
 
@@ -97,3 +98,25 @@ class Agent():
                 actor_target_param = (1 - self.tau) * actor_target_param + self.tau * actor_main_param
             for critic_target_param, critic_main_param in zip(self.critic_target.parameters(), self.critic_main.parameters()):
                 critic_target_param = (1 - self.tau) * critic_target_param + self.tau * critic_main_param
+
+
+class OUNoise:
+    """Ornstein-Uhlenbeck process."""
+
+    def __init__(self, size, mu=0., theta=0.15, sigma=0.2):
+        """Initialize parameters and noise process."""
+        self.mu = mu * np.ones(size)
+        self.theta = theta
+        self.sigma = sigma
+        self.reset()
+
+    def reset(self):
+        """Reset the internal state (= noise) to mean (mu)."""
+        self.state = copy.copy(self.mu)
+
+    def sample(self):
+        """Update internal state and return it as a noise sample."""
+        x = self.state
+        dx = self.theta * (self.mu - x) + self.sigma * np.array([random.random() for i in range(len(x))])
+        self.state = x + dx
+        return self.state
