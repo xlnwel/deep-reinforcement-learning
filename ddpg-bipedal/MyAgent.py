@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from MyModel import *
-from copy import deepcopy
+import copy 
 from collections import deque, namedtuple
 import random
 
@@ -48,8 +48,8 @@ class Agent():
         self.actor_main = Actor(state_size, action_size).to(device)
         self.critic_main = Critic(state_size, action_size).to(device)
         # target actor-critic
-        self.actor_target = deepcopy(self.actor_main)
-        self.critic_target = deepcopy(self.critic_main)
+        self.actor_target = copy.deepcopy(self.actor_main)
+        self.critic_target = copy.deepcopy(self.critic_main)
         # optimizer
         self.actor_optimizer = torch.optim.Adam(self.actor_main.parameters(), lr=alpha)
         self.critic_optimizer = torch.optim.Adam(self.critic_main.parameters(), lr=alpha)
@@ -65,6 +65,7 @@ class Agent():
            action = self.actor_main(state).cpu().numpy()
         self.actor_main.train()
         action += self.noise.sample()
+        action = np.squeeze(action)
 
         return np.clip(action, -1, 1)
 

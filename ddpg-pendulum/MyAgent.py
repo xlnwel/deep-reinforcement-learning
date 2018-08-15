@@ -64,7 +64,7 @@ class Agent():
         with torch.no_grad():
            action = self.actor_main(state).cpu().numpy()
         self.actor_main.train()
-        action += self.noise.sample()
+        action = self.noise.sample()
 
         return np.clip(action, -2, 2)
 
