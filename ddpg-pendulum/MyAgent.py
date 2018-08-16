@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from MyModel import *
-from copy import deepcopy
+import copy
 from collections import deque, namedtuple
 import random
 
@@ -36,7 +36,6 @@ class ReplayBuffer():
 class Agent():
     def __init__(self, state_size, action_size, batch_size=64, actor_alpha=1e-4, critic_alpha=1e-3, gamma=0.99, tau=1e-3):
         # hyperparameters
-        self.alpha = alpha
         self.gamma = gamma
         self.tau = tau
         # env info
@@ -48,8 +47,8 @@ class Agent():
         self.actor_main = Actor(state_size, action_size).to(device)
         self.critic_main = Critic(state_size, action_size).to(device)
         # target actor-critic
-        self.actor_target = deepcopy(self.actor_main)
-        self.critic_target = deepcopy(self.critic_main)
+        self.actor_target = copy.deepcopy(self.actor_main)
+        self.critic_target = copy.deepcopy(self.critic_main)
         # optimizer
         self.actor_optimizer = torch.optim.Adam(self.actor_main.parameters(), lr=actor_alpha)
         self.critic_optimizer = torch.optim.Adam(self.critic_main.parameters(), lr=critic_alpha)

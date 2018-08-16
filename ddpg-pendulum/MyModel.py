@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class Actor(nn.Module):
-    def __init__(self, state_size, action_size):
+    def __init__(self, state_size, action_size, seed):
         super().__init__()
         first_hidden_dims = 512
         n = 2
@@ -39,7 +39,7 @@ class Actor(nn.Module):
 
 
 class Critic(nn.Module):
-    def __init__(self, state_size, action_size):
+    def __init__(self, state_size, action_size, seed):
         super().__init__()
         first_hidden_dims = 512
         n = 2
