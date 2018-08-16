@@ -4,7 +4,7 @@
 
 # Note
 
-Adding batch normalization draw down performance.
+Adding batch normalization actually impairs performance. (solved in 1500 episodes)
 
 # Deep Q-Network (DQN)
 
