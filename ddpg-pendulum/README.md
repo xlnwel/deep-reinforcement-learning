@@ -1,6 +1,14 @@
-[//]: # (Image References)
+[//]: # "Image References"
 
 [image1]: https://user-images.githubusercontent.com/10624937/42135610-c37e0292-7d12-11e8-8228-4d3585f8c026.gif "Trained Agent"
+
+# Notes
+
+Adding batch normalization layer impair performance.
+
+Inserting action to the second layer of critic significantly outperforms adding it to the first. 
+
+Adding noise to parameters (with noise decay) also improves performance a lot (achieving average score -150 within only 200 episodes, significantly better than the baseline, which achieves -500 using 1000 episodes)
 
 # Actor-Critic Methods
 

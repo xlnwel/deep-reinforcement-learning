@@ -1,0 +1,115 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+Actor	../MyModel.py	/^class Actor(nn.Module):$/;"	kind:class	line:5
+Actor	../ddpg_agent.py	/^from MyModel import Actor, Critic$/;"	kind:namespace	line:6
+Actor	../model.py	/^class Actor(nn.Module):$/;"	kind:class	line:13
+Agent	../MyAgent.py	/^class Agent():$/;"	kind:class	line:36
+Agent	../ddpg_agent.py	/^class Agent():$/;"	kind:class	line:22
+Agent	../main.py	/^from MyAgent import Agent$/;"	kind:namespace	line:7
+BATCH_SIZE	../ddpg_agent.py	/^BATCH_SIZE = 128        # minibatch size$/;"	kind:variable	line:13
+BUFFER_SIZE	../ddpg_agent.py	/^BUFFER_SIZE = int(1e5)  # replay buffer size$/;"	kind:variable	line:12
+Critic	../MyModel.py	/^class Critic(nn.Module):$/;"	kind:class	line:28
+Critic	../ddpg_agent.py	/^from MyModel import Actor, Critic$/;"	kind:namespace	line:6
+Critic	../model.py	/^class Critic(nn.Module):$/;"	kind:class	line:45
+F	../MyAgent.py	/^import torch.nn.functional as F$/;"	kind:namespace	line:3
+F	../MyModel.py	/^import torch.nn.functional as F$/;"	kind:namespace	line:3
+F	../ddpg_agent.py	/^import torch.nn.functional as F$/;"	kind:namespace	line:9
+F	../model.py	/^import torch.nn.functional as F$/;"	kind:namespace	line:5
+GAMMA	../ddpg_agent.py	/^GAMMA = 0.99            # discount factor$/;"	kind:variable	line:14
+LR_ACTOR	../ddpg_agent.py	/^LR_ACTOR = 1e-4         # learning rate of the actor $/;"	kind:variable	line:16
+LR_CRITIC	../ddpg_agent.py	/^LR_CRITIC = 1e-3        # learning rate of the critic$/;"	kind:variable	line:17
+MyAgent.py	../MyAgent.py	1;"	kind:file	line:1
+MyModel.py	../MyModel.py	1;"	kind:file	line:1
+OUNoise	../MyAgent.py	/^class OUNoise:$/;"	kind:class	line:98
+OUNoise	../ddpg_agent.py	/^class OUNoise:$/;"	kind:class	line:132
+ReplayBuffer	../MyAgent.py	/^class ReplayBuffer():$/;"	kind:class	line:11
+ReplayBuffer	../ddpg_agent.py	/^class ReplayBuffer:$/;"	kind:class	line:154
+TAU	../ddpg_agent.py	/^TAU = 1e-3              # for soft update of target parameters$/;"	kind:variable	line:15
+WEIGHT_DECAY	../ddpg_agent.py	/^WEIGHT_DECAY = 0        # L2 weight decay$/;"	kind:variable	line:18
+__init__	../MyAgent.py	/^    def __init__(self, sample_size, max_len=int(1e5)):$/;"	kind:member	line:12
+__init__	../MyAgent.py	/^    def __init__(self, size, mu=0., theta=0.15, sigma=0.2):$/;"	kind:member	line:101
+__init__	../MyAgent.py	/^    def __init__(self, state_size, action_size, batch_size=128, actor_alpha=1e-4, critic_alpha=1e-3, gamma=0.99, tau=1e-3):$/;"	kind:member	line:37
+__init__	../MyModel.py	/^    def __init__(self, state_size, action_size):$/;"	kind:member	line:29
+__init__	../MyModel.py	/^    def __init__(self, state_size, action_size):$/;"	kind:member	line:6
+__init__	../ddpg_agent.py	/^    def __init__(self, action_size, buffer_size, batch_size, seed):$/;"	kind:member	line:157
+__init__	../ddpg_agent.py	/^    def __init__(self, size, seed, mu=0., theta=0.15, sigma=0.2):$/;"	kind:member	line:135
+__init__	../ddpg_agent.py	/^    def __init__(self, state_size, action_size, random_seed=2):$/;"	kind:member	line:25
+__init__	../model.py	/^    def __init__(self, state_size, action_size, seed=seed, fc1_units=400, fc2_units=300):$/;"	kind:member	line:16
+__init__	../model.py	/^    def __init__(self, state_size, action_size, seed=seed, fcs1_units=400, fc2_units=300):$/;"	kind:member	line:48
+__len__	../MyAgent.py	/^    def __len__(self):$/;"	kind:member	line:32
+__len__	../ddpg_agent.py	/^    def __len__(self):$/;"	kind:member	line:187
+_learn	../MyAgent.py	/^    def _learn(self):$/;"	kind:member	line:75
+_moving_average	../MyAgent.py	/^    def _moving_average(self):$/;"	kind:member	line:91
+_reset_params	../MyModel.py	/^    def _reset_params(self):$/;"	kind:member	line:13
+_reset_params	../MyModel.py	/^    def _reset_params(self):$/;"	kind:member	line:36
+act	../MyAgent.py	/^    def act(self, state):$/;"	kind:member	line:58
+act	../ddpg_agent.py	/^    def act(self, state, add_noise=True):$/;"	kind:member	line:64
+add	../MyAgent.py	/^    def add(self, state, action, reward, next_state, done):$/;"	kind:member	line:17
+add	../ddpg_agent.py	/^    def add(self, state, action, reward, next_state, done):$/;"	kind:member	line:170
+agent	../main.py	/^agent = Agent(state_size=3, action_size=1)$/;"	kind:variable	line:11
+copy	../MyAgent.py	/^import copy$/;"	kind:namespace	line:5
+copy	../ddpg_agent.py	/^import copy$/;"	kind:namespace	line:3
+ddpg	../main.py	/^def ddpg(n_episodes=1000, max_t=300, print_every=100):$/;"	kind:function	line:13
+ddpg_agent.py	../ddpg_agent.py	1;"	kind:file	line:1
+deque	../MyAgent.py	/^from collections import deque, namedtuple$/;"	kind:namespace	line:6
+deque	../ddpg_agent.py	/^from collections import namedtuple, deque$/;"	kind:namespace	line:4
+deque	../main.py	/^from collections import deque$/;"	kind:namespace	line:5
+device	../MyAgent.py	/^device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')$/;"	kind:variable	line:9
+device	../ddpg_agent.py	/^device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")$/;"	kind:variable	line:20
+env	../main.py	/^env = gym.make('Pendulum-v0')$/;"	kind:variable	line:9
+forward	../MyModel.py	/^    def forward(self, state):$/;"	kind:member	line:21
+forward	../MyModel.py	/^    def forward(self, state, action):$/;"	kind:member	line:44
+forward	../model.py	/^    def forward(self, state):$/;"	kind:member	line:38
+forward	../model.py	/^    def forward(self, state, action):$/;"	kind:member	line:70
+gym	../main.py	/^import gym$/;"	kind:namespace	line:1
+hidden_init	../model.py	/^def hidden_init(layer):$/;"	kind:function	line:8
+learn	../ddpg_agent.py	/^    def learn(self, experiences, gamma):$/;"	kind:member	line:78
+main.py	../main.py	1;"	kind:file	line:1
+model.py	../model.py	1;"	kind:file	line:1
+namedtuple	../MyAgent.py	/^from collections import deque, namedtuple$/;"	kind:namespace	line:6
+namedtuple	../ddpg_agent.py	/^from collections import namedtuple, deque$/;"	kind:namespace	line:4
+nn	../MyAgent.py	/^import torch.nn.functional as F$/;"	kind:namespace	line:3
+nn	../MyModel.py	/^import torch.nn as nn$/;"	kind:namespace	line:2
+nn	../MyModel.py	/^import torch.nn.functional as F$/;"	kind:namespace	line:3
+nn	../ddpg_agent.py	/^import torch.nn.functional as F$/;"	kind:namespace	line:9
+nn	../model.py	/^import torch.nn as nn$/;"	kind:namespace	line:4
+nn	../model.py	/^import torch.nn.functional as F$/;"	kind:namespace	line:5
+np	../MyAgent.py	/^import numpy as np$/;"	kind:namespace	line:1
+np	../ddpg_agent.py	/^import numpy as np$/;"	kind:namespace	line:1
+np	../main.py	/^import numpy as np$/;"	kind:namespace	line:4
+np	../model.py	/^import numpy as np$/;"	kind:namespace	line:1
+optim	../ddpg_agent.py	/^import torch.optim as optim$/;"	kind:namespace	line:10
+random	../MyAgent.py	/^import random$/;"	kind:namespace	line:7
+random	../ddpg_agent.py	/^import random$/;"	kind:namespace	line:2
+random	../main.py	/^import random$/;"	kind:namespace	line:2
+random	../model.py	/^import random$/;"	kind:namespace	line:2
+reset	../MyAgent.py	/^    def reset(self):$/;"	kind:member	line:108
+reset	../ddpg_agent.py	/^    def reset(self):$/;"	kind:member	line:143
+reset	../ddpg_agent.py	/^    def reset(self):$/;"	kind:member	line:75
+reset_parameters	../model.py	/^    def reset_parameters(self):$/;"	kind:member	line:33
+reset_parameters	../model.py	/^    def reset_parameters(self):$/;"	kind:member	line:65
+sample	../MyAgent.py	/^    def sample(self):$/;"	kind:member	line:112
+sample	../MyAgent.py	/^    def sample(self):$/;"	kind:member	line:21
+sample	../ddpg_agent.py	/^    def sample(self):$/;"	kind:member	line:147
+sample	../ddpg_agent.py	/^    def sample(self):$/;"	kind:member	line:175
+scores	../main.py	/^scores = ddpg()$/;"	kind:variable	line:38
+seed	../model.py	/^seed = 2$/;"	kind:variable	line:7
+soft_update	../ddpg_agent.py	/^    def soft_update(self, local_model, target_model, tau):$/;"	kind:member	line:119
+step	../MyAgent.py	/^    def step(self, state, action, reward, next_state, done):$/;"	kind:member	line:69
+step	../ddpg_agent.py	/^    def step(self, state, action, reward, next_state, done):$/;"	kind:member	line:54
+torch	../MyAgent.py	/^import torch$/;"	kind:namespace	line:2
+torch	../MyAgent.py	/^import torch.nn.functional as F$/;"	kind:namespace	line:3
+torch	../MyModel.py	/^import torch$/;"	kind:namespace	line:1
+torch	../MyModel.py	/^import torch.nn as nn$/;"	kind:namespace	line:2
+torch	../MyModel.py	/^import torch.nn.functional as F$/;"	kind:namespace	line:3
+torch	../ddpg_agent.py	/^import torch$/;"	kind:namespace	line:8
+torch	../ddpg_agent.py	/^import torch.nn.functional as F$/;"	kind:namespace	line:9
+torch	../ddpg_agent.py	/^import torch.optim as optim$/;"	kind:namespace	line:10
+torch	../main.py	/^import torch$/;"	kind:namespace	line:3
+torch	../model.py	/^import torch$/;"	kind:namespace	line:3
+torch	../model.py	/^import torch.nn as nn$/;"	kind:namespace	line:4
+torch	../model.py	/^import torch.nn.functional as F$/;"	kind:namespace	line:5

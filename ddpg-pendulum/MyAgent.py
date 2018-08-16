@@ -21,11 +21,11 @@ class ReplayBuffer():
     def sample(self):
         exps = random.sample(self.buffer, self.sample_size)
 
-        states = torch.from_numpy(np.vstack([e.state for e in exps])).float().to(device)
-        actions = torch.from_numpy(np.vstack([e.action for e in exps])).float().to(device)
-        rewards = torch.from_numpy(np.vstack([e.reward for e in exps])).float().to(device)
-        next_states = torch.from_numpy(np.vstack([e.next_state for e in exps])).float().to(device)
-        dones = torch.from_numpy(np.vstack([e.done for e in exps]).astype(np.uint8)).float().to(device)
+        states = torch.from_numpy(np.vstack([e.state for e in exps if e is not None])).float().to(device)
+        actions = torch.from_numpy(np.vstack([e.action for e in exps if e is not None])).float().to(device)
+        rewards = torch.from_numpy(np.vstack([e.reward for e in exps if e is not None])).float().to(device)
+        next_states = torch.from_numpy(np.vstack([e.next_state for e in exps if e is not None])).float().to(device)
+        dones = torch.from_numpy(np.vstack([e.done for e in exps if e is not None]).astype(np.uint8)).float().to(device)
 
         return states, actions, rewards, next_states, dones
 
@@ -34,7 +34,7 @@ class ReplayBuffer():
 
 
 class Agent():
-    def __init__(self, state_size, action_size, batch_size=64, actor_alpha=1e-4, critic_alpha=1e-3, gamma=0.99, tau=1e-3):
+    def __init__(self, state_size, action_size, batch_size=128, actor_alpha=1e-4, critic_alpha=1e-3, gamma=0.99, tau=1e-3):
         # hyperparameters
         self.gamma = gamma
         self.tau = tau
@@ -52,24 +52,28 @@ class Agent():
         # optimizer
         self.actor_optimizer = torch.optim.Adam(self.actor_main.parameters(), lr=actor_alpha)
         self.critic_optimizer = torch.optim.Adam(self.critic_main.parameters(), lr=critic_alpha)
-        # Noise process
-        self.noise = OUNoise(action_size)
+
+        self.noise_decay = 1 + 1e-4
 
     def act(self, state):
-        state = state.reshape((1, -1))
         state = torch.from_numpy(state).float().to(device)
-
+        # add noise to parameters
+        saved_params = []
+        for param in self.actor_main.parameters():
+            saved_params.append(param)
+            param = param + torch.normal(mean=0.0, std=torch.ones_like(param) / (10 * self.noise_decay))
+        self.noise_decay *= 1 + 1e-4
         self.actor_main.eval()
         with torch.no_grad():
            action = self.actor_main(state).cpu().numpy()
         self.actor_main.train()
-        action = self.noise.sample()
+        # restore parameters
+        for param, saved_param in zip(self.actor_main.parameters(), saved_params):
+            param = saved_param
 
         return np.clip(action, -2, 2)
 
     def step(self, state, action, reward, next_state, done):
-        state = state.reshape((1, -1))
-        next_state = next_state.reshape((1, -1))
         self.buffer.add(state, action, reward, next_state, done)
 
         if len(self.buffer) > self.buffer.sample_size + 100:
@@ -89,32 +93,9 @@ class Agent():
         actor_loss.backward()
         self.actor_optimizer.step()
         # update the target networks
-        self._moving_average()
+        self._moving_average(self.actor_main, self.actor_target)
+        self._moving_average(self.critic_main, self.critic_target)
 
-    def _moving_average(self):
-        for actor_target_param, actor_main_param in zip(self.actor_target.parameters(), self.actor_main.parameters()):
-            actor_target_param.data.copy_(self.tau * actor_main_param.data + (1.0 - self.tau) * actor_target_param.data)
-        for critic_target_param, critic_main_param in zip(self.critic_target.parameters(), self.critic_main.parameters()):
-            critic_target_param.data.copy_(self.tau * critic_main_param.data + (1.0 - self.tau) * critic_target_param.data)
-
-
-class OUNoise:
-    """Ornstein-Uhlenbeck process."""
-
-    def __init__(self, size, mu=0., theta=0.15, sigma=0.2):
-        """Initialize parameters and noise process."""
-        self.mu = mu * np.ones(size)
-        self.theta = theta
-        self.sigma = sigma
-        self.reset()
-
-    def reset(self):
-        """Reset the internal state (= noise) to mean (mu)."""
-        self.state = copy.copy(self.mu)
-
-    def sample(self):
-        """Update internal state and return it as a noise sample."""
-        x = self.state
-        dx = self.theta * (self.mu - x) + self.sigma * np.array([random.random() for i in range(len(x))])
-        self.state = x + dx
-        return self.state
+    def _moving_average(self, main, target):
+        for target_param, main_param in zip(target.parameters(), main.parameters()):
+            target_param.data.copy_(self.tau * main_param.data + (1.0 - self.tau) * target_param.data)
