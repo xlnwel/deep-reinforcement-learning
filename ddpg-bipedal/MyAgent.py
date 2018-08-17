@@ -5,21 +5,24 @@ from MyModel import *
 import copy 
 from collections import deque, namedtuple
 import random
+from queue import PriorityQueue
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 class ReplayBuffer():
     def __init__(self, sample_size, max_len=int(1e5)):
-        self.buffer = deque(maxlen=max_len)
+        self.buffer = PriorityQueue(maxsize=max_len)
         self.sample_size = sample_size
         self.experience = namedtuple('experience', ('state', 'action', 'reward', 'next_state', 'done'))
 
     def add(self, state, action, reward, next_state, done):
         exp = self.experience(state, action, reward, next_state, done)
-        self.buffer.append(exp)
+        if self.buffer.full():
+            self.buffer.get()
+        self.buffer.put([error, exp])
 
     def sample(self):
-        exps = random.sample(self.buffer, self.sample_size)
+        _, exps = zip(*random.sample(self.buffer, self.sample_size))
 
         states = torch.from_numpy(np.vstack([e.state for e in exps if e is not None])).float().to(device)
         actions = torch.from_numpy(np.vstack([e.action for e in exps if e is not None])).float().to(device)
@@ -38,7 +41,7 @@ class Agent():
         # hyperparameters
         self.gamma = gamma
         self.tau = tau
-        # self.noise_decay = 1 + 1e-5
+        self.noise_decay = 1 + 1e-5
         # env info
         self.state_size = state_size
         self.action_size = action_size
@@ -62,8 +65,10 @@ class Agent():
             saved_params.append(copy.deepcopy(param))
             param = param + torch.normal(mean=0.0, std=torch.ones_like(param) / 10)
 
-        # self.noise_decay *= 1 + 1e-5
-        
+        self.noise_decay *= 1 + 1e-5
+        if self.noise_decay > 2:
+            print('noise decay:', self.noise_decay)
+            
         self.actor_main.eval()
         with torch.no_grad():
            action = self.actor_main(state).cpu().numpy()
@@ -75,7 +80,26 @@ class Agent():
         return np.clip(action, -1, 1)
 
     def step(self, state, action, reward, next_state, done):
-        self.buffer.add(state, action, reward, next_state, done)
+        # compute error used as the priority number of priority queue
+        self.critic_main.eval()
+        with torch.no_grad():
+           value = self.critic_main(state, action).cpu().numpy()
+        self.critic_main.train()
+
+        if done:
+            error = reward - value
+        else:
+            self.actor_main.eval()
+            self.critic_main.eval()
+            with torch.no_grad():
+                next_action = self.actor_main(next_state)
+                next_value = self.critic_main(next_state, next_action).cpu().numpy()
+            self.actor_main.train()
+            self.critic_main.train()
+
+            error = reward + next_value - value
+
+        self.buffer.add(state, action, reward, next_state, done, error)
 
         if len(self.buffer) > self.buffer.sample_size + 100:
             self._learn()
