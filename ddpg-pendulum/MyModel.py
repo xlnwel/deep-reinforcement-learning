@@ -30,7 +30,7 @@ class Critic(nn.Module):
         super().__init__()
         self.fc1 = nn.Linear(state_size, 512)
         self.fc2 = nn.Linear(512 + action_size, 256)
-        self.fc3 = nn.Linear(256, action_size)
+        self.fc3 = nn.Linear(256, 1)
         self._reset_params()
 
     def _reset_params(self):

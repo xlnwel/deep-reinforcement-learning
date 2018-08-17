@@ -60,9 +60,11 @@ class Agent():
         # add noise to parameters
         saved_params = []
         for param in self.actor_main.parameters():
-            saved_params.append(param)
+            saved_params.append(copy.deepcopy(param))
             param = param + torch.normal(mean=0.0, std=torch.ones_like(param) / (10 * self.noise_decay))
+
         self.noise_decay *= 1 + 1e-4
+        
         self.actor_main.eval()
         with torch.no_grad():
            action = self.actor_main(state).cpu().numpy()
