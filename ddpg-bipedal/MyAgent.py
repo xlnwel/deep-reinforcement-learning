@@ -5,21 +5,23 @@ from MyModel import *
 import copy 
 from collections import deque, namedtuple
 import random
-from queue import PriorityQueue
+import heapq
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 class ReplayBuffer():
     def __init__(self, sample_size, max_len=int(1e5)):
-        self.buffer = PriorityQueue(maxsize=max_len)
+        self.buffer = []
+        self.max_len = max_len
         self.sample_size = sample_size
         self.experience = namedtuple('experience', ('state', 'action', 'reward', 'next_state', 'done'))
 
-    def add(self, state, action, reward, next_state, done):
+    def add(self, state, action, reward, next_state, done, error):
         exp = self.experience(state, action, reward, next_state, done)
-        if self.buffer.full():
-            self.buffer.get()
-        self.buffer.put([error, exp])
+        if len(self.buffer) <= self.max_len:
+            heapq.heappush(self.buffer, [error, exp])
+        else:
+            heapq.heapreplace(self.buffer, [error, exp])
 
     def sample(self):
         _, exps = zip(*random.sample(self.buffer, self.sample_size))
@@ -68,7 +70,7 @@ class Agent():
         self.noise_decay *= 1 + 1e-5
         if self.noise_decay > 2:
             print('noise decay:', self.noise_decay)
-            
+
         self.actor_main.eval()
         with torch.no_grad():
            action = self.actor_main(state).cpu().numpy()
@@ -81,23 +83,20 @@ class Agent():
 
     def step(self, state, action, reward, next_state, done):
         # compute error used as the priority number of priority queue
+        state_tensor = torch.from_numpy(state).float().to(device)
+        action_tensor = torch.from_numpy(action).float().to(device)
+        next_state_tensor = torch.from_numpy(next_state).float().to(device)
+
+        self.actor_main.eval()
         self.critic_main.eval()
         with torch.no_grad():
-           value = self.critic_main(state, action).cpu().numpy()
+            value = self.critic_main(state_tensor, action_tensor).cpu().numpy()
+            next_action_tensor = self.actor_main(next_state_tensor)
+            next_value = self.critic_main(next_state_tensor, next_action_tensor).cpu().numpy()
+        self.actor_main.train()
         self.critic_main.train()
 
-        if done:
-            error = reward - value
-        else:
-            self.actor_main.eval()
-            self.critic_main.eval()
-            with torch.no_grad():
-                next_action = self.actor_main(next_state)
-                next_value = self.critic_main(next_state, next_action).cpu().numpy()
-            self.actor_main.train()
-            self.critic_main.train()
-
-            error = reward + next_value - value
+        error = reward + (1 - done) * self.gamma * next_value - value
 
         self.buffer.add(state, action, reward, next_state, done, error)
 
