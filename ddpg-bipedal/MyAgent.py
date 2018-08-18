@@ -83,9 +83,9 @@ class Agent():
 
     def step(self, state, action, reward, next_state, done):
         # compute error used as the priority number of priority queue
-        state_tensor = torch.from_numpy(state).float().to(device)
-        action_tensor = torch.from_numpy(action).float().to(device)
-        next_state_tensor = torch.from_numpy(next_state).float().to(device)
+        state_tensor = torch.from_numpy(np.reshape(state, (1, -1))).float().to(device)
+        action_tensor = torch.from_numpy(np.reshape(action, (1, -1))).float().to(device)
+        next_state_tensor = torch.from_numpy(np.reshape(next_state, (1, -1))).float().to(device)
 
         self.actor_main.eval()
         self.critic_main.eval()
