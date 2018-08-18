@@ -22,7 +22,7 @@ class Actor(nn.Module):
         x = state
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        return 2 * torch.tanh(self.fc3(x))
+        return torch.tanh(self.fc3(x))
 
 
 class Critic(nn.Module):
