@@ -1,7 +1,11 @@
-[//]: # (Image References)
+[//]: # "Image References"
 
 [image1]: https://user-images.githubusercontent.com/10624937/42135602-b0335606-7d12-11e8-8689-dd1cf9fa11a9.gif "Trained Agents"
 [image2]: https://user-images.githubusercontent.com/10624937/42386929-76f671f0-8106-11e8-9376-f17da2ae852e.png "Kernel"
+
+# For The Record
+
+I've done every projects on my own, but I have to admit that some are failed to solve because they take too much time to train and do hyperparameter search on CPU. For these projects, I write what I've tried and
 
 # Deep Reinforcement Learning Nanodegree
 
