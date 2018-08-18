@@ -18,10 +18,17 @@ class ReplayBuffer():
 
     def add(self, state, action, reward, next_state, done, error):
         exp = self.experience(state, action, reward, next_state, done)
-        if len(self.buffer) <= self.max_len:
-            heapq.heappush(self.buffer, [error, exp])
-        else:
-            heapq.heapreplace(self.buffer, [error, exp])
+        try:
+            if len(self.buffer) <= self.max_len:
+                heapq.heappush(self.buffer, [error, exp])
+            else:
+                heapq.heapreplace(self.buffer, [error, exp])
+        except(ValueError):
+            error += random.uniform(1e-6, 1e-4)
+            if len(self.buffer) <= self.max_len:
+                heapq.heappush(self.buffer, [error, exp])
+            else:
+                heapq.heapreplace(self.buffer, [error, exp])
 
     def sample(self):
         _, exps = zip(*random.sample(self.buffer, self.sample_size))
