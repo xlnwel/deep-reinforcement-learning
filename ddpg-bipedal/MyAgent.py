@@ -96,9 +96,9 @@ class Agent():
         self.actor_main.train()
         self.critic_main.train()
 
-        value = np.squeeze(value)
-        next_value = np.squeeze(next_state)
         error = reward + (1 - done) * self.gamma * next_value - value
+
+        error = np.squeeze(error)
 
         self.buffer.add(state, action, reward, next_state, done, error)
 
