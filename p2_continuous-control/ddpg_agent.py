@@ -35,7 +35,9 @@ class ReplayBuffer():
 
 
 class Agent():
-    def __init__(self, state_size, action_size, batch_size=128, actor_alpha=1e-3, critic_alpha=1e-3, gamma=0.99, tau=1e-3, device=device):
+    def __init__(self, state_size, action_size, batch_size=128, 
+                 actor_alpha=1e-3, critic_alpha=1e-3, gamma=0.99, tau=1e-3, 
+                 device=device, actor_file=None, critic_file=None):
         # hyperparameters
         self.gamma = gamma
         self.tau = tau
@@ -46,8 +48,8 @@ class Agent():
         # replay buffer
         self.buffer = ReplayBuffer(sample_size=batch_size)
         # actor-critic
-        self.actor_main = Actor(state_size, action_size).to(device)
-        self.critic_main = Critic(state_size, action_size).to(device)
+        self.actor_main = Actor(state_size, action_size, param_file=actor_file).to(device)
+        self.critic_main = Critic(state_size, action_size, param_file=critic_file).to(device)
         # target actor-critic
         self.actor_target = copy.deepcopy(self.actor_main)
         self.critic_target = copy.deepcopy(self.critic_main)

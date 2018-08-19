@@ -3,12 +3,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class Actor(nn.Module):
-    def __init__(self, state_size, action_size):
+    def __init__(self, state_size, action_size, param_file=None):
         super().__init__()
         self.fc1 = nn.Linear(state_size, 512)
         self.fc2 = nn.Linear(512, 256)
         self.fc3 = nn.Linear(256, action_size)
-        self._reset_params()
+        if param_file:
+            self.load_state_dict(torch.load(param_file))
+        else:
+            self._reset_params()
 
     def _reset_params(self):
         nn.init.kaiming_normal_(self.fc1.weight)
@@ -26,14 +29,17 @@ class Actor(nn.Module):
 
 
 class Critic(nn.Module):
-    def __init__(self, state_size, action_size):
+    def __init__(self, state_size, action_size, param_file=None):
         super().__init__()
         self.fc1 = nn.Linear(state_size, 512)
         self.bn1 = nn.BatchNorm1d(512)
         self.fc2 = nn.Linear(512 + action_size, 256)
         self.bn2 = nn.BatchNorm1d(256)
         self.fc3 = nn.Linear(256, 1)
-        self._reset_params()
+        if param_file:
+            self.load_state_dict(torch.load(param_file))
+        else:
+            self._reset_params()
 
     def _reset_params(self):
         nn.init.kaiming_normal_(self.fc1.weight)
