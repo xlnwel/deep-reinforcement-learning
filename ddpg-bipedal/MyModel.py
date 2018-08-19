@@ -10,7 +10,7 @@ class Actor(nn.Module):
         self.fc3 = nn.Linear(256, action_size)
         self._reset_params()
         if param_file:
-            self.load_state_dict(torch.load(param_file))
+            self.load_params(param_file)
         else:
             self._reset_params()
 
@@ -21,6 +21,9 @@ class Actor(nn.Module):
         nn.init.constant_(self.fc2.bias, 0)
         nn.init.xavier_normal_(self.fc3.weight)
         nn.init.constant_(self.fc3.bias, 0)
+
+    def load_params(self, param_file):
+        self.load_state_dict(torch.load(param_file))
 
     def forward(self, state):
         x = F.relu(self.fc1(state))
@@ -37,7 +40,7 @@ class Critic(nn.Module):
         self.bn2 = nn.BatchNorm1d(256)
         self.fc3 = nn.Linear(256, 1)
         if param_file:
-            self.load_state_dict(torch.load(param_file))
+            self.load_params(param_file)
         else:
             self._reset_params()
 
@@ -49,6 +52,9 @@ class Critic(nn.Module):
         nn.init.xavier_normal_(self.fc3.weight)
         nn.init.constant_(self.fc3.bias, 0)
     
+    def load_params(self, param_file):
+        self.load_state_dict(torch.load(param_file))
+
     def forward(self, state, action):
         x = F.relu(self.bn1(self.fc1(state)))
         x = torch.cat((x, action), dim=1)
