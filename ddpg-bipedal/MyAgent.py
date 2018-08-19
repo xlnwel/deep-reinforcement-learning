@@ -18,21 +18,26 @@ class ReplayBuffer():
 
     def add(self, state, action, reward, next_state, done, error):
         exp = self.experience(state, action, reward, next_state, done)
+        # here using exception handler to avoid unnecessary overhead in general
         try:
             if len(self.buffer) <= self.max_len:
                 heapq.heappush(self.buffer, [error, exp])
             else:
                 heapq.heapreplace(self.buffer, [error, exp])
         except(ValueError):
-            error += random.uniform(1e-6, 1e-4)
+            errors = [item[0] for item in self.buffer]
+            new_error_fn = lambda: error + random.uniform(1e-6, 1e-5)
+            new_error = new_error_fn()
+            while new_error in errors:
+                new_error = new_error_fn()
             if len(self.buffer) <= self.max_len:
-                heapq.heappush(self.buffer, [error, exp])
+                heapq.heappush(self.buffer, [new_error, exp])
             else:
-                heapq.heapreplace(self.buffer, [error, exp])
+                heapq.heapreplace(self.buffer, [new_error, exp])
 
     def sample(self):
         _, exps = zip(*random.sample(self.buffer, self.sample_size))
-
+ 
         states = torch.from_numpy(np.vstack([e.state for e in exps if e is not None])).float().to(device)
         actions = torch.from_numpy(np.vstack([e.action for e in exps if e is not None])).float().to(device)
         rewards = torch.from_numpy(np.vstack([e.reward for e in exps if e is not None])).float().to(device)
