@@ -25,8 +25,8 @@ class ReplayBuffer():
             else:
                 heapq.heapreplace(self.buffer, [error, exp])
         except(ValueError):
-            print("error": error)
-            print(exp)
+            print("Error:", error)
+            print('Experience:', exp)
             errors = [item[0] for item in self.buffer]
             new_error_fn = lambda: error + random.uniform(1e-6, 1e-5)
             new_error = new_error_fn()
