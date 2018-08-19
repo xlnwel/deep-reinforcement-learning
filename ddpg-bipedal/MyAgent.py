@@ -5,42 +5,40 @@ from MyModel import *
 import copy 
 from collections import deque, namedtuple
 import random
-import heapq
+# import heapq
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 class ReplayBuffer():
     def __init__(self, sample_size, max_len=int(1e5)):
-        self.buffer = []
-        self.max_len = max_len
+        self.buffer = deque(maxlen=max_len)
         self.sample_size = sample_size
         self.experience = namedtuple('experience', ('state', 'action', 'reward', 'next_state', 'done'))
 
-    def add(self, state, action, reward, next_state, done, error):
+    def add(self, state, action, reward, next_state, done):
         exp = self.experience(state, action, reward, next_state, done)
-        # here using exception handler to avoid unnecessary overhead in general
-        try:
-            if len(self.buffer) <= self.max_len:
-                heapq.heappush(self.buffer, [error, exp])
-            else:
-                heapq.heapreplace(self.buffer, [error, exp])
-        except(ValueError):
-            print("Error:", error)
-            print('Experience:', exp)
-            errors = [item[0] for item in self.buffer]
-            new_error_fn = lambda: error + random.uniform(1e-6, 1e-5)
-            new_error = new_error_fn()
-            while new_error in errors:
-                new_error = new_error_fn()
-            assert new_error not in errors, 'The error is already in the buffer.'
-            if len(self.buffer) <= self.max_len:
-                heapq.heappush(self.buffer, [new_error, exp])
-            else:
-                heapq.heapreplace(self.buffer, [new_error, exp])
+        # # here using exception handler to avoid unnecessary overhead in general
+        # try:
+        #     if len(self.buffer) <= self.max_len:
+        #         heapq.heappush(self.buffer, [error, exp])
+        #     else:
+        #         heapq.heapreplace(self.buffer, [error, exp])
+        # except(ValueError):
+        #     errors = [item[0] for item in self.buffer]
+        #     new_error_fn = lambda: error + random.uniform(1e-6, 1e-5)
+        #     new_error = new_error_fn()
+        #     while new_error in errors:
+        #         new_error = new_error_fn()
+        #     assert new_error not in errors, 'The error is already in the buffer.'
+        #     if len(self.buffer) <= self.max_len:
+        #         heapq.heappush(self.buffer, [new_error, exp])
+        #     else:
+        #         heapq.heapreplace(self.buffer, [new_error, exp])
+        self.buffer.append(exp)
 
     def sample(self):
-        _, exps = zip(*random.sample(self.buffer, self.sample_size))
- 
+        # _, exps = zip(*random.sample(self.buffer, self.sample_size))
+        exps = random.sample(self.buffer, self.sample_size)
         states = torch.from_numpy(np.vstack([e.state for e in exps if e is not None])).float().to(device)
         actions = torch.from_numpy(np.vstack([e.action for e in exps if e is not None])).float().to(device)
         rewards = torch.from_numpy(np.vstack([e.reward for e in exps if e is not None])).float().to(device)
@@ -98,24 +96,24 @@ class Agent():
 
     def step(self, state, action, reward, next_state, done):
         # compute error used as the priority number of priority queue
-        state_tensor = torch.from_numpy(np.reshape(state, (1, -1))).float().to(device)
-        action_tensor = torch.from_numpy(np.reshape(action, (1, -1))).float().to(device)
-        next_state_tensor = torch.from_numpy(np.reshape(next_state, (1, -1))).float().to(device)
+        # state_tensor = torch.from_numpy(np.reshape(state, (1, -1))).float().to(device)
+        # action_tensor = torch.from_numpy(np.reshape(action, (1, -1))).float().to(device)
+        # next_state_tensor = torch.from_numpy(np.reshape(next_state, (1, -1))).float().to(device)
+        #
+        # self.actor_main.eval()
+        # self.critic_main.eval()
+        # with torch.no_grad():
+        #     value = self.critic_main(state_tensor, action_tensor).cpu().numpy()
+        #     next_action_tensor = self.actor_main(next_state_tensor)
+        #     next_value = self.critic_main(next_state_tensor, next_action_tensor).cpu().numpy()
+        # self.actor_main.train()
+        # self.critic_main.train()
+        #
+        # error = reward + (1 - done) * self.gamma * next_value - value
+        #
+        # error = error.item()
 
-        self.actor_main.eval()
-        self.critic_main.eval()
-        with torch.no_grad():
-            value = self.critic_main(state_tensor, action_tensor).cpu().numpy()
-            next_action_tensor = self.actor_main(next_state_tensor)
-            next_value = self.critic_main(next_state_tensor, next_action_tensor).cpu().numpy()
-        self.actor_main.train()
-        self.critic_main.train()
-
-        error = reward + (1 - done) * self.gamma * next_value - value
-
-        error = np.squeeze(error)
-
-        self.buffer.add(state, action, reward, next_state, done, error)
+        self.buffer.add(state, action, reward, next_state, done)
 
         if len(self.buffer) > self.buffer.sample_size + 100:
             self._learn()
