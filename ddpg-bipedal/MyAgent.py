@@ -25,11 +25,14 @@ class ReplayBuffer():
             else:
                 heapq.heapreplace(self.buffer, [error, exp])
         except(ValueError):
+            print("error": error)
+            print(exp)
             errors = [item[0] for item in self.buffer]
             new_error_fn = lambda: error + random.uniform(1e-6, 1e-5)
             new_error = new_error_fn()
             while new_error in errors:
                 new_error = new_error_fn()
+            assert new_error not in errors, 'The error is already in the buffer.'
             if len(self.buffer) <= self.max_len:
                 heapq.heappush(self.buffer, [new_error, exp])
             else:
