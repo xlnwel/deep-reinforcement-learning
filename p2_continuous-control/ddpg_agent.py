@@ -41,7 +41,7 @@ class Agent():
         # hyperparameters
         self.gamma = gamma
         self.tau = tau
-        self.noise_decay = 1 + 1e-5
+        self.noise_decay = 1 + 5e-6
         # env info
         self.state_size = state_size
         self.action_size = action_size
@@ -65,7 +65,7 @@ class Agent():
             saved_params.append(copy.deepcopy(param))
             param = param + torch.normal(mean=0.0, std=torch.ones_like(param) / (10 * self.noise_decay))
 
-        self.noise_decay *= 1 + 1e-5
+        self.noise_decay *= 1 + 5e-6
         
         self.actor_main.eval()
         with torch.no_grad():
