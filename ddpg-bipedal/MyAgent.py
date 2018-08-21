@@ -17,7 +17,7 @@ class ReplayBuffer():
 
     def add(self, state, action, reward, next_state, done):
         exp = self.experience(state, action, reward, next_state, done)
-        # # here using exception handler to avoid unnecessary overhead in general
+        # here using exception handler to avoid unnecessary overhead in general
         # try:
         #     if len(self.buffer) <= self.max_len:
         #         heapq.heappush(self.buffer, [error, exp])
@@ -53,7 +53,7 @@ class ReplayBuffer():
 
 class Agent():
     def __init__(self, state_size, action_size, batch_size=64, 
-                 actor_alpha=1e-4, critic_alpha=3e-4, gamma=0.99, tau=1e-3,
+                 actor_alpha=1e-4, critic_alpha=3e-4, gamma=0.9, tau=1e-3,
                  weight_decay=1e-4, actor_file=None, critic_file=None):
         # hyperparameters
         self.gamma = gamma

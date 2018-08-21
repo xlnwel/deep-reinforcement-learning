@@ -39,9 +39,7 @@ class Critic(nn.Module):
         self.bn1 = nn.BatchNorm1d(initial_hidden_units)
         self.fc2 = nn.Linear(initial_hidden_units + action_size, initial_hidden_units // 2)
         self.bn2 = nn.BatchNorm1d(initial_hidden_units // 2)
-        self.fc3 = nn.Linear(initial_hidden_units // 2, initial_hidden_units // 4)
-        self.bn3 = nn.BatchNorm1d(initial_hidden_units // 4)
-        self.fc4 = nn.Linear(initial_hidden_units // 4, 1)
+        self.fc3 = nn.Linear(initial_hidden_units // 2, 1)
         if param_file:
             self.load_params(param_file)
         else:
@@ -54,8 +52,6 @@ class Critic(nn.Module):
         nn.init.constant_(self.fc2.bias, 0)
         nn.init.kaiming_normal_(self.fc3.weight)
         nn.init.constant_(self.fc3.bias, 0)
-        nn.init.xavier_normal_(self.fc4.weight)
-        nn.init.constant_(self.fc4.bias, 0)
     
     def load_params(self, param_file):
         self.load_state_dict(torch.load(param_file))
@@ -64,5 +60,4 @@ class Critic(nn.Module):
         x = F.relu(self.bn1(self.fc1(state)))
         x = torch.cat((x, action), dim=1)
         x = F.relu(self.bn2(self.fc2(x)))
-        x = F.relu(self.bn3(self.fc3(x)))
-        return self.fc4(x)
+        return self.fc3(x)
