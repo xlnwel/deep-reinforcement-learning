@@ -11,15 +11,19 @@ class Agent(object):
         self.sess = sess if sess is not None else tf.get_default_session()
         self.reuse = reuse
         self.log_tensorboard = log_tensorboard
+
         # hyperparameters
         self.gamma = args[name]['gamma']
         self.tau = args[name]['tau']
         self.init_noise_sigma = args[name]['init_noise_sigma']
         self.noise_decay = args[name]['noise_decay']
+        
         # replay buffer
         self.buffer = ReplayBuffer(sample_size=args['batch_size'])
+        
         # env info
         self._setup_env()
+        
         # main actor-critic
         self.actor, self.critic, self.critic_with_actor = self._create_actor_critic()
         # target actor-critic
@@ -148,14 +152,12 @@ class Agent(object):
         self.sess.run(self.update_target_op)
 
     def _noise_params(self):
-        # add noise to parameters
-        # TODO: only to perturbable params
         noises = []
         noise_sigma = tf.get_variable('noise_sigma', initializer=self.init_noise_sigma, 
                                       trainable=False, regularizer=tc.layers.l2_regularizer(1 - self.noise_decay))
         if self.log_tensorboard:
             tf.summary.scalar('noise_sigma', noise_sigma)
-        for var in self.actor.trainable_variables:
+        for var in self.actor.perturbable_variables:
             noise = tf.truncated_normal(tf.shape(var), stddev=noise_sigma)
             noises.append(noise)
         
