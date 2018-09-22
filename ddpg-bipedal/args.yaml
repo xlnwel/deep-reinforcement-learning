@@ -1,0 +1,20 @@
+---
+ddpg:
+    learning_rate: 0.0001
+    weight_decay: 0.001
+    gamma: 0.9
+    tau: 0.001
+    init_noise_sigma: 0.1
+    noise_decay: 0.999995
+    state_size: 24
+    action_size: 4
+    reward_size: 1
+    done: 1
+actor:
+    learning_rate: 0.0001
+critic:
+    learning_rate: 0.0003
+
+batch_size: 64
+
+model_name: lr_0001-gamma_9-tau_001-noise_1_999995-actor_0001-critic_0003
