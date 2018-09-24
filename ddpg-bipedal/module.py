@@ -20,10 +20,6 @@ class Module(object):
     def trainable_variables(self):
         return tf.trainable_variables(scope=self.name)
 
-    @property
-    def perturbable_variables(self):
-        return [var for var in self.trainable_variables if 'LayerNorm' not in var.name]
-
     def build_graph(self):
         with tf.variable_scope(self.name, reuse=self.reuse):
             scale = self._args[self.name]['weight_decay'] if self.name in self._args and 'weight_decay' in self._args[self.name] else 0.
@@ -49,7 +45,6 @@ class Module(object):
             else:
                 models = self._get_models()
                 key = self._get_model_name()
-                # tried to get the model name saved at args.yaml
                 path_prefix = models[key] if key in models else NO_SUCH_FILE
             if path_prefix != NO_SUCH_FILE:
                 try:
@@ -83,21 +78,24 @@ class Module(object):
             global_step = tf.get_variable('global_step', shape=(), initializer=tf.constant_initializer([0]), trainable=False)
             learning_rate = tf.train.exponential_decay(init_learning_rate, global_step, decay_steps, decay_rate, staircase=True)
             self._optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2)
-
-            tf.summary.scalar('learning_rate_', learning_rate)
+            
+            if self.log_tensorboard:
+                tf.summary.scalar('learning_rate_', learning_rate)
 
         with tf.control_dependencies(update_ops):
-            opt_op = self._optimizer.minimize(loss, var_list=self.trainable_variables, global_step=global_step)
+            tvars = self.trainable_variables
+            grads, _ = tf.clip_by_global_norm(tf.gradients(loss, tvars), 5)
+            opt_op = self._optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
+            if self.log_tensorboard:
+                with tf.name_scope('gradients_'):
+                    for grad, var in zip(grads, tvars):
+                        if grad is None:
+                            continue
+                        else:
+                            tf.summary.histogram(var.name.replace(':0', ''), grad)
 
         if self.log_tensorboard:
-            with tf.name_scope('gradients'):
-                grad_var_pairs = self._optimizer.compute_gradients(loss)
-                for grad, var in grad_var_pairs:
-                    if grad is None:
-                        continue
-                    tf.summary.histogram(var.name.replace(':0', '/gradient'), grad)
-
-            with tf.name_scope('weights'):
+            with tf.name_scope('weights_'):
                 for var in self.trainable_variables:
                     tf.summary.histogram(var.name.replace(':0', ''), var)
             
