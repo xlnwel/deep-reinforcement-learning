@@ -25,8 +25,8 @@ class Actor(Module):
     
     def _network(self, state):
         with tf.variable_scope('actor_net', reuse=self.reuse):
-            x = tf.nn.relu(self._dense(state, 512, kernel_initializer=tf_utils.kaiming_initializer()))
-            x = tf.nn.relu(self._dense(x, 256, kernel_initializer=tf_utils.kaiming_initializer()))
+            x = tf.nn.relu(self._dense(state, 256))
+            x = tf.nn.relu(self._dense(x, 128))
             x = tf.tanh(self._dense(x, self.action_size))
 
         return x
@@ -50,9 +50,9 @@ class Critic(Module):
 
     def _network(self, state, action):
         with tf.variable_scope('critic_net', reuse=self.reuse):
-            x = tf.nn.relu(tc.layers.layer_norm(self._dense(state, 1024)))
+            x = self._dense_ln_relu(state, 256)
             x = tf.concat([x, action], 1)
-            x = tf.nn.relu(tc.layers.layer_norm(self._dense(x, 512)))
+            x =self._dense_ln_relu(x, 128)
             x = self._dense(x, 1)
 
         return x
