@@ -3,11 +3,11 @@ import tensorflow.contrib as tc
 
 # kaiming initializer
 def kaiming_initializer(uniform=False, seed=None, dtype=tf.float32):
-    return tc.layers.variance_scaling_initializer(factor=2, mode='FAN_IN', uniform=uniform, seed=seed, dtype=dtype)
+    return tc.layers.variance_scaling_initializer(factor=2., mode='FAN_IN', uniform=uniform, seed=seed, dtype=dtype)
 
 # xavier initializer
 def xavier_initializer(uniform=False, seed=None, dtype=tf.float32):
-    return tc.layers.variance_scaling_initializer(factor=1, mode='FAN_AVG', uniform=uniform, seed=seed, dtype=dtype)
+    return tc.layers.variance_scaling_initializer(factor=1., mode='FAN_AVG', uniform=uniform, seed=seed, dtype=dtype)
 
 # batch normalization and relu
 def bn_relu(layer, training): 
