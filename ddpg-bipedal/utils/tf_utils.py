@@ -1,16 +1,21 @@
 import tensorflow as tf
+import tensorflow.contrib as tc
 
 # kaiming initializer
 def kaiming_initializer(uniform=False, seed=None, dtype=tf.float32):
-    return tf.contrib.layers.variance_scaling_initializer(factor=2, mode='FAN_IN', uniform=uniform, seed=seed, dtype=dtype)
+    return tc.layers.variance_scaling_initializer(factor=2, mode='FAN_IN', uniform=uniform, seed=seed, dtype=dtype)
 
 # xavier initializer
 def xavier_initializer(uniform=False, seed=None, dtype=tf.float32):
-    return tf.contrib.layers.variance_scaling_initializer(factor=1, mode='FAN_AVG', uniform=uniform, seed=seed, dtype=dtype)
+    return tc.layers.variance_scaling_initializer(factor=1, mode='FAN_AVG', uniform=uniform, seed=seed, dtype=dtype)
 
-# relu and batch normalization
+# batch normalization and relu
 def bn_relu(layer, training): 
     return tf.nn.relu(tf.layers.batch_normalization(layer, training=training))
+
+# layer normalization and relu
+def ln_relu(layer):
+    return tf.nn.relu(tc.layers.layer_norm(layer))
 
 def standard_normalization(images):
     mean, var = tf.nn.moments(images, [0, 1, 2])
