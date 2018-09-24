@@ -19,7 +19,10 @@ class Module(object):
     @property
     def trainable_variables(self):
         return tf.trainable_variables(scope=self.name)
-
+    @property
+    def perturbable_variables(self):
+        return [var for var in self.trainable_variables if 'LayerNorm' not in var.name]
+        
     def build_graph(self):
         with tf.variable_scope(self.name, reuse=self.reuse):
             scale = self._args[self.name]['weight_decay'] if self.name in self._args and 'weight_decay' in self._args[self.name] else 0.
