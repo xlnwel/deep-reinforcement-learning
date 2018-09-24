@@ -3,7 +3,7 @@ import random
 import numpy as np
 
 class ReplayBuffer():
-    def __init__(self, sample_size, max_len=int(1e5)):
+    def __init__(self, sample_size, max_len=int(1e6)):
         self.buffer = deque(maxlen=max_len)
         self.sample_size = sample_size
         self.experience = namedtuple('experience', ('state', 'action', 'reward', 'next_state', 'done'))
