@@ -42,9 +42,9 @@ class Agent(object):
         self.opt_op = tf.group(self.actor.opt_op, self.critic.opt_op)
 
         # target net operations
-        target_main_var_pairs = zip(self._target_variables, self.main_variables)
+        target_main_var_pairs = zip(self._target_variables, self.trainable_variables)
         self.init_target_op = list(map(lambda v: v[0].assign(v[1]), target_main_var_pairs))
-        self.update_target_op = list(map(lambda v: v[0].assign(self.tau * v[0] + (1. - self.tau) * v[1]), target_main_var_pairs))
+        self.update_target_op = list(map(lambda v: v[0].assign(self.tau * v[1] + (1. - self.tau) * v[0]), target_main_var_pairs))
 
         # operations that add/remove noise from parameters
         self.noise_op, self.denoise_op = self._noise_params()
@@ -52,7 +52,7 @@ class Agent(object):
         self.initialize()
 
     @property
-    def main_variables(self):
+    def trainable_variables(self):
         return self.actor.trainable_variables + self.critic.trainable_variables
 
     @property
@@ -101,15 +101,12 @@ class Agent(object):
             self.env_info['done'] = tf.placeholder(tf.uint8, shape=(None, 1), name='done')
 
     def _create_actor_critic(self, is_target=False):
-        name_prefix = ''
-        if is_target:
-            name_prefix += 'target_'
+        name_prefix = 'target_' if is_target else ''
 
         actor = Actor(name_prefix + 'actor', self._args, self.env_info, self.action_size, reuse=self.reuse, is_target=is_target)
         critic = Critic(name_prefix + 'critic', self._args, self.env_info, reuse=self.reuse, is_target=is_target)
-        critic_with_actor = None
-        if not is_target:
-            critic_with_actor = Critic('critic', self._args, self.env_info, action=actor.action, reuse=True, is_target=is_target)
+        critic_with_actor = None if is_target else Critic('critic', self._args, self.env_info, action=actor.action, reuse=True, is_target=is_target)
+        
         return actor, critic, critic_with_actor
 
     def _loss(self):
