@@ -113,6 +113,12 @@ class Module(object):
 
         return x
 
+    def _dense_ln_relu(self, x, units, kernel_initializer=tf_utils.kaiming_initializer()):
+        x = self._dense(x, 256, kernel_initializer=kernel_initializer)
+        x = tf_utils.ln_relu(x)
+
+        return x
+
     def _conv(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=tf_utils.xavier_initializer()): 
         return tf.layers.conv2d(x, filters, filter_size, 
                                 strides=strides, padding=padding, 
