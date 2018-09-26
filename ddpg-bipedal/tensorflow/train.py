@@ -6,17 +6,13 @@ from collections import deque
 import matplotlib.pyplot as plt
 import utils.utils as utils
 import tensorflow as tf
-from ddpg import Agent
+from ddpg_tf import Agent
 
 env = gym.make('BipedalWalker-v2')
 env.seed(0)
 
 sess = tf.Session()
 agent = Agent('ddpg', utils.load_args(), sess=sess)
-
-merged = tf.summary.merge_all()
-writer = tf.summary.FileWriter('./ddpg/', sess.graph)
-merge_op = tf.summary.merge_all()
 
 def ddpg(n_episodes=10000, max_t=1000):
     scores_deque = deque(maxlen=100)
@@ -38,8 +34,6 @@ def ddpg(n_episodes=10000, max_t=1000):
         if i_episode % 100 == 0:
             print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_deque)))
             agent.save()
-            summary = sess.run(merge_op)
-            writer.add_summary(summary, i_episode)
     return scores
 
 scores = ddpg()

@@ -74,10 +74,10 @@ class Module(object):
         init_learning_rate = self._args[self.name]['learning_rate'] if 'learning_rate' in self._args[self.name] else 1e-3
         beta1 = self._args[self.name]['beta1'] if 'beta1' in self._args[self.name] else 0.9
         beta2 = self._args[self.name]['beta2'] if 'beta2' in self._args[self.name] else 0.999
-        decay_rate = self._args[self.name]['decay_rate'] if 'decay_rate' in self._args[self.name] else 0.95
-        decay_steps = self._args[self.name]['decay_steps'] if 'decay_steps' in self._args[self.name] else 1000
+        decay_rate = self._args[self.name]['decay_rate'] if 'decay_rate' in self._args[self.name] else 1
+        decay_steps = self._args[self.name]['decay_steps'] if 'decay_steps' in self._args[self.name] else 10000
 
-        with tf.name_scope('optimizer'):
+        with tf.variable_scope('optimizer', reuse=self.reuse):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             global_step = tf.get_variable('global_step', shape=(), initializer=tf.constant_initializer([0]), trainable=False)
             learning_rate = tf.train.exponential_decay(init_learning_rate, global_step, decay_steps, decay_rate, staircase=True)
@@ -86,17 +86,17 @@ class Module(object):
             if self.log_tensorboard:
                 tf.summary.scalar('learning_rate_', learning_rate)
 
-        with tf.control_dependencies(update_ops):
-            tvars = self.trainable_variables
-            grads, _ = tf.clip_by_global_norm(tf.gradients(loss, tvars), 5)
-            opt_op = self._optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
-            if self.log_tensorboard:
-                with tf.name_scope('gradients_'):
-                    for grad, var in zip(grads, tvars):
-                        if grad is None:
-                            continue
-                        else:
-                            tf.summary.histogram(var.name.replace(':0', ''), grad)
+            with tf.control_dependencies(update_ops):
+                tvars = self.trainable_variables
+                grads, _ = tf.clip_by_global_norm(tf.gradients(loss, tvars), 5)
+                opt_op = self._optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
+                if self.log_tensorboard:
+                    with tf.name_scope('gradients_'):
+                        for grad, var in zip(grads, tvars):
+                            if grad is None:
+                                continue
+                            else:
+                                tf.summary.histogram(var.name.replace(':0', ''), grad)
 
         if self.log_tensorboard:
             with tf.name_scope('weights_'):
