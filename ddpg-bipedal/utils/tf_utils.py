@@ -10,12 +10,36 @@ def xavier_initializer(uniform=False, seed=None, dtype=tf.float32):
     return tc.layers.variance_scaling_initializer(factor=1., mode='FAN_AVG', uniform=uniform, seed=seed, dtype=dtype)
 
 # batch normalization and relu
-def bn_relu(layer, training): 
-    return tf.nn.relu(tf.layers.batch_normalization(layer, training=training))
+def bn_relu(x, training): 
+    return tf.nn.relu(tf.layers.batch_normalization(x, training=training))
 
 # layer normalization and relu
-def ln_relu(layer):
-    return tf.nn.relu(tc.layers.layer_norm(layer))
+def ln_relu(x):
+    return tf.nn.relu(tc.layers.layer_norm(x))
+
+def bn_activation(x, training, activation=None):
+    x = tf.layers.batch_normalization(x, training=training)
+
+    if activation:
+        x = activation(x)
+
+    return x
+
+def ln_activation(x, activation=None):
+    x = tc.layers.layer_norm(x)
+
+    if activation:
+        x = activation(x)
+
+    return x
+
+def norm_activation(x, normalization=None, activation=None, training=False):
+    if normalization:
+        x = normalization(x, training=training) if 'batch_normalization' in str(normalization) else normalization(x)
+    if activation:
+        x = activation(x)
+
+    return x
 
 def standard_normalization(images):
     mean, var = tf.nn.moments(images, [0, 1, 2])

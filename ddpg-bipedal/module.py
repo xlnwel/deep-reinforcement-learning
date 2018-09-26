@@ -111,13 +111,20 @@ class Module(object):
 
     def _dense_bn_relu(self, x, units, kernel_initializer=tf_utils.kaiming_initializer()):
         x = self._dense(x, units, kernel_initializer=kernel_initializer)
-        x = tf_utils.bn_relu(x, self.is_training)
+        x = tf_utils.bn_relu(x, self._training())
 
         return x
 
     def _dense_ln_relu(self, x, units, kernel_initializer=tf_utils.kaiming_initializer()):
-        x = self._dense(x, 256, kernel_initializer=kernel_initializer)
+        x = self._dense(x, units, kernel_initializer=kernel_initializer)
         x = tf_utils.ln_relu(x)
+
+        return x
+
+    def _dense_norm_activation(self, x, units, kernel_initializer=tf_utils.kaiming_initializer(),
+                               normalization=None, activation=None):
+        x = self._dense(x, units)
+        x = tf_utils.norm_activation(x, normalization=normalization, activation=activation, training=self._training())
 
         return x
 
@@ -129,7 +136,14 @@ class Module(object):
 
     def _conv_bn_relu(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=tf_utils.kaiming_initializer()):
         x = self._conv(x, filters, filter_size, strides, padding=padding, kernel_initializer=kernel_initializer)
-        x = tf_utils.bn_relu(x, self.is_training)
+        x = tf_utils.bn_relu(x, self._training())
+
+        return x
+
+    def _conv_norm_activation(self, x, filters, filter_size, strides=1, padding='same', 
+                              kernel_initializer=tf_utils.kaiming_initializer(), normalization=None, activation=None):
+        x = self._conv(x, filters, filter_size, strides, padding=padding, kernel_initializer=kernel_initializer)
+        x = tf_utils.norm_activation(x, normalization=normalization, activation=activation, training=getattr(self, 'is_training', False))
 
         return x
     
@@ -139,18 +153,28 @@ class Module(object):
     
     def _convtrans_bn_relu(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=tf_utils.kaiming_initializer()):
         x = self._convtrans(x, filters, filter_size, strides, padding=padding)
-        x = tf_utils.bn_relu(x, self.is_training)
+        x = tf_utils.bn_relu(x, self._training())
+
+        return x
+
+    def _convtrans_norm_activation(self, x, filters, filter_size, strides=1, padding='same', 
+                              kernel_initializer=tf_utils.kaiming_initializer(), normalization=None, activation=None):
+        x = self._convtrans(x, filters, filter_size, strides, padding=padding, kernel_initializer=kernel_initializer)
+        x = tf_utils.norm_activation(x, normalization=normalization, activation=activation, training=getattr(self, 'is_training', False))
 
         return x
 
     def _conv_pool_bn_relu(self, x, filters, filter_size, strides=1):
         y = x
         y = self._conv(y, filters, filter_size, strides, padding='same', kernel_initializer=tf_utils.kaiming_initializer())
-        y = tf_utils.bn_relu(y, self.is_training)
+        y = tf_utils.bn_relu(y, self._training())
         x = tf.layers.average_pooling2d(x, strides, strides, padding='same')
 
         return tf.concat([x, y], -1)
 
+    def _training(self):
+        return getattr(self, 'is_training', False)
+        
     def _get_models(self):
         return utils.load_args('models.yaml')
 
