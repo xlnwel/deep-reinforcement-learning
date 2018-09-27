@@ -14,6 +14,10 @@ I tried to improve it further by adding batch normalization, using priority queu
 
 I don't know where the error is: I save the model and reload it, then the agent seems start all over again. Maybe it has something to do with replay buffer being cleared after restart training, maybe.
 
+## TODO
+
+- Implement critic as DDQN
+
 # Actor-Critic Methods
 
 ### Instructions

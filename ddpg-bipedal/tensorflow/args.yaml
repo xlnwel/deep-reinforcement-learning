@@ -3,7 +3,7 @@ ddpg:
     gamma: 0.99
     tau: 0.001
     init_noise_sigma: 0.1
-    noise_decay: 0.999995
+    noise_decay: 0.99999
     buffer_size: 100000
     state_size: 24
     action_size: 4
@@ -17,4 +17,4 @@ critic:
 
 batch_size: 64
 
-model_name: lr_0001_0003-gamma_99-tau_001-noise_1_999995-actor_0001-critic_0003-simpler_net
+model_name: lr_0001_0003-gamma_99-tau_001-noise_1_99999-actor_0001-critic_0003-simpler_net
