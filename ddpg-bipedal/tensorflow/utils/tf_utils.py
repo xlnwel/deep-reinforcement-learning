@@ -68,3 +68,11 @@ def logsumexp(value, axis=None, keepdims=False):
     else:
         max_value = tf.reduce_max(value)
         return max_value + tf.log(tf.reduce_sum(tf.exp(value - max_value)))
+
+def get_tensor(sess, name=None, op_name=None):
+    if name is None and op_name is None:
+        raise ValueError
+    elif name:
+        return sess.graph.get_tensor_by_name(name)
+    else:
+        return sess.graph.get_tensor_by_name(op_name + ':0')
