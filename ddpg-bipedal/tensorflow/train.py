@@ -13,7 +13,7 @@ env.seed(0)
 
 sess = tf.Session()
 agent = Agent('ddpg', utils.load_args(), sess=sess)
-
+agent.restore()
 def ddpg(n_episodes=10000, max_t=1000):
     scores_deque = deque(maxlen=100)
     scores = []
@@ -30,9 +30,10 @@ def ddpg(n_episodes=10000, max_t=1000):
                 break 
         scores_deque.append(score)
         scores.append(score)
-        print('\rEpisode {}\tAverage Score: {:.2f}\tScore: {:.2f}'.format(i_episode, np.mean(scores_deque), score), end="")
+        average_score = np.mean(scores_deque)
+        print('\rEpisode {}\tAverage Score: {:.2f}\tScore: {:.2f}'.format(i_episode, average_score, score), end="")
         if i_episode % 100 == 0:
-            print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_deque)))
+            print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, average_score))
             agent.save()
     return scores
 
