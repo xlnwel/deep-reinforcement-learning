@@ -135,7 +135,7 @@ class Agent(Module):
                 tf.summary.scalar('critic_loss_', critic_loss)
                 with tf.variable_scope('debug_grads'):
                     tensors = [tf_utils.get_tensor(self.sess, op_name='ddpg/main/actor/Tanh'), tf_utils.get_tensor(self.sess, op_name='ddpg/main/actor/dense_2/BiasAdd')]
-                    tvars = self.critic.trainable_variables + tensors + self.actor.trainable_variables
+                    tvars = tensors + self.actor.trainable_variables
                     grads = tf.gradients(actor_loss, tvars)
                     for grad, var in zip(grads, tvars):
                         tf.summary.histogram(var.name.replace(':0', ''), grad)
