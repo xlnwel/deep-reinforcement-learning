@@ -1,1 +1,1 @@
-python3 ./tensorflow/train.py
+python3 ./tensorflow-imp/train.py
