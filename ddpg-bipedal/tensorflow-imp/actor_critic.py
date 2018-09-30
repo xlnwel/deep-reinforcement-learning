@@ -1,19 +1,19 @@
 import tensorflow as tf
 import tensorflow.contrib as tc
-from module import Module
+from module import SubModule
 import utils.tf_utils as tf_utils
 
 """
  These classes are designed to cooperate with DDPG,
  which means they are not supposed to be used independently
 """
-class Actor(Module):
-    def __init__(self, name, args, env_info, action_size, reuse=False, build_graph=True, log_tensorboard=True, is_target=False, save=False):
+class Actor(SubModule):
+    def __init__(self, name, args, env_info, action_size, reuse=False, build_graph=True, log_tensorboard=True, is_target=False):
         self.action_size = action_size
         self.state = env_info['state'] if not is_target else env_info['next_state']
         self.is_target = is_target
         self.variable_scope = 'ddpg/' + ('target/' if self.is_target else 'main/') + name
-        super(Actor, self).__init__(name, args, reuse=reuse, build_graph=build_graph, log_tensorboard=log_tensorboard, save=save)
+        super(Actor, self).__init__(name, args, reuse=reuse, build_graph=build_graph, log_tensorboard=log_tensorboard)
 
     @property
     def global_variables(self):
@@ -39,13 +39,13 @@ class Actor(Module):
         return x
 
 
-class Critic(Module):
-    def __init__(self, name, args, env_info, action=None, reuse=False, build_graph=True, log_tensorboard=True, is_target=False, save=False):
+class Critic(SubModule):
+    def __init__(self, name, args, env_info, action=None, reuse=False, build_graph=True, log_tensorboard=True, is_target=False):
         self.state = env_info['state'] if not is_target else env_info['next_state']
         self.action = env_info['action'] if action is None else action
         self.is_target = is_target
         self.variable_scope = 'ddpg/' + ('target/' if self.is_target else 'main/') + name
-        super(Critic, self).__init__(name, args, reuse=reuse, build_graph=build_graph, log_tensorboard=log_tensorboard, save=save)
+        super(Critic, self).__init__(name, args, reuse=reuse, build_graph=build_graph, log_tensorboard=log_tensorboard)
 
     @property
     def global_variables(self):

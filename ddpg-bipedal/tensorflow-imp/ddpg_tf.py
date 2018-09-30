@@ -112,9 +112,9 @@ class Agent(Module):
 
     def _create_actor_critic(self, is_target=False):
         with tf.variable_scope('target' if is_target else 'main'):
-            actor = Actor('actor', self._args, self.env_info, self.action_size, reuse=self.reuse, is_target=is_target, save=False)
-            critic = Critic('critic', self._args, self.env_info, reuse=self.reuse, is_target=is_target, save=False)
-            critic_with_actor = Critic('critic', self._args, self.env_info, action=actor.action, reuse=True, is_target=is_target, save=False)
+            actor = Actor('actor', self._args, self.env_info, self.action_size, reuse=self.reuse, is_target=is_target)
+            critic = Critic('critic', self._args, self.env_info, reuse=self.reuse, is_target=is_target)
+            critic_with_actor = Critic('critic', self._args, self.env_info, action=actor.action, reuse=True, is_target=is_target)
         
         return actor, critic, critic_with_actor
 
