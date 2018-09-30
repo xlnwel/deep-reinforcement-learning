@@ -116,38 +116,38 @@ class SubModule(object):
 
         return x
 
-    def _conv(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=tf_utils.xavier_initializer()): 
-        return tf.layers.conv2d(x, filters, filter_size, 
+    def _conv(self, x, filters, kernel_size, strides=1, padding='same', kernel_initializer=tf_utils.xavier_initializer()): 
+        return tf.layers.conv2d(x, filters, kernel_size, 
                                 strides=strides, padding=padding, 
                                 kernel_initializer=kernel_initializer, 
                                 kernel_regularizer=self.l2_regularizer)
 
-    def _conv_bn_relu(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=tf_utils.kaiming_initializer()):
-        x = self._conv(x, filters, filter_size, strides, padding=padding, kernel_initializer=kernel_initializer)
+    def _conv_bn_relu(self, x, filters, kernel_size, strides=1, padding='same', kernel_initializer=tf_utils.kaiming_initializer()):
+        x = self._conv(x, filters, kernel_size, strides, padding=padding, kernel_initializer=kernel_initializer)
         x = tf_utils.bn_relu(x, self._training)
 
         return x
 
-    def _conv_norm_activation(self, x, filters, filter_size, strides=1, padding='same', 
+    def _conv_norm_activation(self, x, filters, kernel_size, strides=1, padding='same', 
                               kernel_initializer=tf_utils.xavier_initializer(), normalization=None, activation=None):
-        x = self._conv(x, filters, filter_size, strides, padding=padding, kernel_initializer=kernel_initializer)
+        x = self._conv(x, filters, kernel_size, strides, padding=padding, kernel_initializer=kernel_initializer)
         x = tf_utils.norm_activation(x, normalization=normalization, activation=activation, training=getattr(self, 'is_training', False))
 
         return x
     
-    def _convtrans(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=tf_utils.xavier_initializer()): 
-        return tf.layers.conv2d_transpose(x, filters, filter_size, strides=strides, padding=padding, 
+    def _convtrans(self, x, filters, kernel_size, strides=1, padding='same', kernel_initializer=tf_utils.xavier_initializer()): 
+        return tf.layers.conv2d_transpose(x, filters, kernel_size, strides=strides, padding=padding, 
                                           kernel_initializer=kernel_initializer, kernel_regularizer=self.l2_regularizer)
     
-    def _convtrans_bn_relu(self, x, filters, filter_size, strides=1, padding='same', kernel_initializer=tf_utils.kaiming_initializer()):
-        x = self._convtrans(x, filters, filter_size, strides, padding=padding)
+    def _convtrans_bn_relu(self, x, filters, kernel_size, strides=1, padding='same', kernel_initializer=tf_utils.kaiming_initializer()):
+        x = self._convtrans(x, filters, kernel_size, strides, padding=padding)
         x = tf_utils.bn_relu(x, self._training)
 
         return x
 
-    def _convtrans_norm_activation(self, x, filters, filter_size, strides=1, padding='same', 
+    def _convtrans_norm_activation(self, x, filters, kernel_size, strides=1, padding='same', 
                               kernel_initializer=tf_utils.xavier_initializer(), normalization=None, activation=None):
-        x = self._convtrans(x, filters, filter_size, strides, padding=padding, kernel_initializer=kernel_initializer)
+        x = self._convtrans(x, filters, kernel_size, strides, padding=padding, kernel_initializer=kernel_initializer)
         x = tf_utils.norm_activation(x, normalization=normalization, activation=activation, training=getattr(self, 'is_training', False))
 
         return x
