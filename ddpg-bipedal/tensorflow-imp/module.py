@@ -23,16 +23,11 @@ class SubModule(object):
         self.log_tensorboard = log_tensorboard
 
         if build_graph:
-            self.build_graph(False)
+            self.build_graph()
         
-    def build_graph(self, save=True):
+    def build_graph(self):
         with tf.variable_scope(self.name, reuse=self.reuse):
             self._build_graph()
-
-            if save:
-                self._saver = tf.train.Saver(self.global_variables)
-            else:
-                self._saver = None
 
     @property
     def global_variables(self):
@@ -154,8 +149,18 @@ class SubModule(object):
 
 class Module(SubModule):
     """ Interface """
-    def __init__(self, name, args, reuse=False, build_graph=True, log_tensorboard=False, save=True):
+    def __init__(self, name, args, sess=None, reuse=False, build_graph=True, log_tensorboard=False, save=True):
         super(Module, self).__init__(name, args, reuse, build_graph, log_tensorboard)
+        
+        # initialize session and global variables
+        self.sess = sess if sess is not None else tf.get_default_session()
+        if build_graph:
+            sess.run(tf.global_variables_initializer())
+            
+        # tensorboard info
+        self._setup_tensorboard_summary()
+
+        self._setup_saver(save)
 
     @property
     def l2_regularizer(self):
@@ -191,6 +196,17 @@ class Module(SubModule):
             utils.save_args({key: path_prefix}, filename='models.yaml')
 
     """ Implementation """
+    def _setup_tensorboard_summary(self):
+        if self.log_tensorboard:
+            self.writer = tf.summary.FileWriter(os.path.join('./tensorboard_logs', self._args['model_name']), self.sess.graph)
+            self.merged_op = tf.summary.merge_all()
+            
+    def _setup_saver(self, save):
+        if save:
+            self._saver = tf.train.Saver(self.global_variables)
+        else:
+            self._saver = None
+
     def _get_models(self):
         return utils.load_args('models.yaml')
 

@@ -9,7 +9,6 @@ from replaybuffer import ReplayBuffer
 
 class Agent(Module):
     def __init__(self, name, args, sess=None, reuse=False, log_tensorboard=True, save=True):
-        self.sess = sess if sess is not None else tf.get_default_session()
         self.train_steps = 0
 
         # hyperparameters
@@ -20,8 +19,8 @@ class Agent(Module):
         
         # replay buffer
         self.buffer = ReplayBuffer(sample_size=args['batch_size'], max_len=args[name]['buffer_size'])
-
-        super(Agent, self).__init__(name, args, reuse=reuse, build_graph=True, log_tensorboard=log_tensorboard, save=save)
+        
+        super(Agent, self).__init__(name, args, sess=sess, reuse=reuse, build_graph=True, log_tensorboard=log_tensorboard, save=save)
 
         self.initialize()
 
@@ -51,48 +50,39 @@ class Agent(Module):
         if len(self.buffer) > self.buffer.sample_size + 100:
             self._learn()
 
-    def build_graph(self, save=True):
-        with tf.variable_scope(self.name, reuse=self.reuse):
-            # env info
-            self._setup_env()
-            
-            # main actor-critic
-            self.actor, self.critic, self.critic_with_actor = self._create_actor_critic()
-            # target actor-critic
-            self._target_actor, self._target_critic, self._target_critic_with_actor = self._create_actor_critic(is_target=True)
-
-            # losses
-            actor_loss, critic_loss = self._loss()
-            self.actor.loss = actor_loss
-            self.critic.loss = critic_loss
+    def _build_graph(self):
+        # env info
+        self._setup_env()
         
-            # optimizating operation
-            with tf.variable_scope('optimization'):
-                with tf.variable_scope('actor'):
-                    self.actor.opt_op = self.actor._optimize(self.actor.loss)
-                with tf.variable_scope('critic'):
-                    self.critic.opt_op = self.critic._optimize(self.critic.loss)
-            self.opt_op = tf.group(self.actor.opt_op, self.critic.opt_op)
+        # main actor-critic
+        self.actor, self.critic, self.critic_with_actor = self._create_actor_critic()
+        # target actor-critic
+        self._target_actor, self._target_critic, self._target_critic_with_actor = self._create_actor_critic(is_target=True)
 
-            if self.log_tensorboard:
-                tf.summary.scalar('Q_', tf.reduce_mean(self.critic.Q))
-                
-            # target net update operations
-            with tf.name_scope('target_net_op'):
-                target_main_var_pairs = list(zip(self._target_variables, self.main_variables))
-                self.init_target_op = list(map(lambda v: tf.assign(v[0], v[1], name='init_target_op'), target_main_var_pairs))
-                self.update_target_op = list(map(lambda v: tf.assign(v[0], self.tau * v[1] + (1. - self.tau) * v[0], name='update_target_op'), target_main_var_pairs))
-                
-            # operations that add/remove noise from parameters
-            self.noise_op, self.denoise_op = self._noise_params()
+        # losses
+        actor_loss, critic_loss = self._loss()
+        self.actor.loss = actor_loss
+        self.critic.loss = critic_loss
+    
+        # optimizating operation
+        with tf.variable_scope('optimization'):
+            with tf.variable_scope('actor'):
+                self.actor.opt_op = self.actor._optimize(self.actor.loss)
+            with tf.variable_scope('critic'):
+                self.critic.opt_op = self.critic._optimize(self.critic.loss)
+        self.opt_op = tf.group(self.actor.opt_op, self.critic.opt_op)
+
+        if self.log_tensorboard:
+            tf.summary.scalar('Q_', tf.reduce_mean(self.critic.Q))
             
-            # tensorboard info
-            self._setup_tensorboard_summary()
-
-        if save:
-            self._saver = tf.train.Saver(self.global_variables)
-        else:
-            self._saver = None
+        # target net update operations
+        with tf.name_scope('target_net_op'):
+            target_main_var_pairs = list(zip(self._target_variables, self.main_variables))
+            self.init_target_op = list(map(lambda v: tf.assign(v[0], v[1], name='init_target_op'), target_main_var_pairs))
+            self.update_target_op = list(map(lambda v: tf.assign(v[0], self.tau * v[1] + (1. - self.tau) * v[0], name='update_target_op'), target_main_var_pairs))
+            
+        # operations that add/remove noise from parameters
+        self.noise_op, self.denoise_op = self._noise_params()
         
     def _setup_env(self):
         self.state_size = self._args[self.name]['state_size']
@@ -104,11 +94,6 @@ class Agent(Module):
             self.env_info['next_state'] = tf.placeholder(tf.float32, shape=(None, self.state_size), name='next_state')
             self.env_info['reward'] = tf.placeholder(tf.float32, shape=(None, 1), name='reward')
             self.env_info['done'] = tf.placeholder(tf.uint8, shape=(None, 1), name='done')
-
-    def _setup_tensorboard_summary(self):
-        if self.log_tensorboard:
-            self.writer = tf.summary.FileWriter(os.path.join('./tensorboard_logs', self._args['model_name']), self.sess.graph)
-            self.merged_op = tf.summary.merge_all()
 
     def _create_actor_critic(self, is_target=False):
         with tf.variable_scope('target' if is_target else 'main'):
