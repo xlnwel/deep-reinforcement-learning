@@ -8,13 +8,14 @@ ddpg:
     state_size: 24
     action_size: 4
     done: 1
-actor:
-    learning_rate: 0.0001
+actor_critic:
     weight_decay: 0.0001
-critic:
-    learning_rate: 0.0003
-    weight_decay: 0.0001
+    actor:
+        learning_rate: 0.0001
+        beta1: 0.9
+    critic:
+        learning_rate: 0.0003
 
 batch_size: 64
 
-model_name: lr_0001_0003-gamma_99-tau_001-noise_1_99999-actor_0001-critic_0003-simpler_net
+model_name: lr_0001_0003-gamma_99-tau_001-noise_1_99999-actor_0001-critic_0003

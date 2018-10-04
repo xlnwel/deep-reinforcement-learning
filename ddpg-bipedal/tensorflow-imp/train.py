@@ -6,13 +6,13 @@ from collections import deque
 import matplotlib.pyplot as plt
 import utils.utils as utils
 import tensorflow as tf
-from ddpg_tf import Agent
+from ddpg_tf import DDPG
 
 env = gym.make('BipedalWalker-v2')
 env.seed(0)
 
 sess = tf.Session()
-agent = Agent('ddpg', utils.load_args(), sess=sess)
+agent = DDPG('ddpg', utils.load_args(), sess=sess)
 agent.restore()
 def ddpg(n_episodes=10000, max_t=1000):
     scores_deque = deque(maxlen=100)

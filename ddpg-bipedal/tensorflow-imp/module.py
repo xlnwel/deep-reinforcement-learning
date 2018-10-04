@@ -1,21 +1,18 @@
 import tensorflow as tf
 import tensorflow.contrib as tc
-import utils.utils as utils
-import utils.tf_utils as tf_utils
+from utils import utils, tf_utils
 import os
 import sys
 
 """ 
-SubModule defines some commonly used layer wrappers,
-Classes inherit SubModule should not be used independently.
-Instead, they should be a part of another class inherited from Module
-Module defines some useful interface such as save & restore
-and should be used as the base class for independently used classes
-For example, Actor-Critic should inherit SubModule and DDPG should inherit Module
+Module defines the basic functions to build a tesorflow graph
+Model further defines save & restore functionns based onn Module
+For example, Actor-Critic should inherit Module and DDPG should inherit Model
 since we generally save parameters all together in DDPG
 """
 
-class SubModule(object):
+class Module(object):
+    """ Interface """
     def __init__(self, name, args, reuse=False, build_graph=True, log_tensorboard=False):
         self.name = name
         self._args = args
@@ -50,9 +47,10 @@ class SubModule(object):
     def l2_regularizer(self):
         return tc.layers.l2_regularizer(0.)
     
+    """ Implementation """
     def _build_graph(self):
         raise NotImplementedError
-
+    
     def _optimize(self, loss):
         # params for optimizer
         init_learning_rate = self._args[self.name]['learning_rate'] if 'learning_rate' in self._args[self.name] else 1e-3
@@ -68,21 +66,20 @@ class SubModule(object):
             learning_rate = tf.train.exponential_decay(init_learning_rate, global_step, decay_steps, decay_rate, staircase=True)
             self._optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2)
             
-            if self.log_tensorboard:
+            if self.log_tensorboard and decay_rate != 1:
                 tf.summary.scalar('learning_rate_', learning_rate)
 
             with tf.control_dependencies(update_ops):
-                tvars = self.trainable_variables
-                grads, _ = tf.clip_by_global_norm(tf.gradients(loss, tvars), 5)
+                grads, tvars = zip(*self._optimizer.compute_gradients(loss))
+                grads, _ = tf.clip_by_global_norm(grads, 5.)
                 opt_op = self._optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
-                if self.log_tensorboard:
-                    with tf.name_scope('gradients_'):
-                        for grad, var in zip(grads, tvars):
-                            if grad is not None:
-                                tf.summary.histogram(var.name.replace(':0', ''), grad)
 
         if self.log_tensorboard:
-            with tf.name_scope('weights_'):
+            with tf.name_scope('gradients_'):
+                for grad, var in zip(grads, tvars):
+                    if grad is not None:
+                        tf.summary.histogram(var.name.replace(':0', ''), grad)
+            with tf.name_scope('params_'):
                 for var in self.trainable_variables:
                     tf.summary.histogram(var.name.replace(':0', ''), var)
             
@@ -147,19 +144,21 @@ class SubModule(object):
 
         return x
 
-class Module(SubModule):
+class Model(Module):
     """ Interface """
     def __init__(self, name, args, sess=None, reuse=False, build_graph=True, log_tensorboard=False, save=True):
-        super(Module, self).__init__(name, args, reuse, build_graph, log_tensorboard)
-        
         # initialize session and global variables
         self.sess = sess if sess is not None else tf.get_default_session()
-        if build_graph:
-            sess.run(tf.global_variables_initializer())
+
+        super(Model, self).__init__(name, args, reuse, build_graph, log_tensorboard)
             
+        if build_graph:
+            self.sess.run(tf.global_variables_initializer())
+        
         # tensorboard info
         self._setup_tensorboard_summary()
-
+        
+        # saver
         self._setup_saver(save)
 
     @property
@@ -174,7 +173,7 @@ class Module(SubModule):
         if self._saver:
             NO_SUCH_FILE = 'Missing_file'
             if filename:
-                path_prefix = os.path.join(sys.path[0], 'saved_models/' + filename, self.name)
+                path_prefix = os.path.join(sys.path[0], 'saved_models/' + filename)
             else:
                 models = self._get_models()
                 key = self._get_model_name()
@@ -191,7 +190,7 @@ class Module(SubModule):
     def save(self):
         if self._saver:
             key = self._get_model_name()
-            path_prefix = self._saver.save(self.sess, os.path.join(sys.path[0], 'saved_models/' + self._args['model_name'], str(self.name)))
+            path_prefix = self._saver.save(self.sess, os.path.join(sys.path[0], 'saved_models/' + self._args['model_name']))
             # save the model name to models.yaml
             utils.save_args({key: path_prefix}, filename='models.yaml')
 
@@ -211,4 +210,4 @@ class Module(SubModule):
         return utils.load_args('models.yaml')
 
     def _get_model_name(self):
-        return self.name + '_' + self._args['model_name']
+        return self._args['model_name']

@@ -3,13 +3,14 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.contrib as tc
 from utils import tf_utils
-from module import Module
-from actor_critic import Actor, Critic
+from module import Model
+from actor_critic import ActorCritic
 from replaybuffer import ReplayBuffer
 
-class Agent(Module):
+class DDPG(Model):
+    """ Interface """
     def __init__(self, name, args, sess=None, reuse=False, log_tensorboard=True, save=True):
-        self.train_steps = 0
+        self.learn_steps = 0
 
         # hyperparameters
         self.gamma = args[name]['gamma']
@@ -20,27 +21,22 @@ class Agent(Module):
         # replay buffer
         self.buffer = ReplayBuffer(sample_size=args['batch_size'], max_len=args[name]['buffer_size'])
         
-        super(Agent, self).__init__(name, args, sess=sess, reuse=reuse, build_graph=True, log_tensorboard=log_tensorboard, save=save)
+        super(DDPG, self).__init__(name, args, sess=sess, reuse=reuse, build_graph=True, log_tensorboard=log_tensorboard, save=save)
 
-        self.initialize()
+        self._initialize_target_net()
 
     @property
     def main_variables(self):
-        return self.actor.trainable_variables + self.critic.trainable_variables
+        return self.actor_critic.trainable_variables
 
     @property
     def _target_variables(self):
-        return self._target_actor.trainable_variables + self._target_critic.trainable_variables
-
-    def initialize(self):
-        self.sess.run(tf.global_variables_initializer())
-        self.sess.run(self.init_target_op)
+        return self._target_actor_critic.trainable_variables
 
     def act(self, state):
         self.sess.run(self.noise_op)
         state = state.reshape((-1, self.state_size))
-        action = self.sess.run(self.actor.action, feed_dict={self.actor.state: state})
-        self.sess.run(self.denoise_op)
+        action = self.sess.run(self.actor_critic.actor_action, feed_dict={self.actor_critic.state: state})
         
         return np.squeeze(action)
 
@@ -50,31 +46,22 @@ class Agent(Module):
         if len(self.buffer) > self.buffer.sample_size + 100:
             self._learn()
 
+    """ Implementation """
     def _build_graph(self):
         # env info
         self._setup_env()
         
         # main actor-critic
-        self.actor, self.critic, self.critic_with_actor = self._create_actor_critic()
+        self.actor_critic = self._create_actor_critic()
         # target actor-critic
-        self._target_actor, self._target_critic, self._target_critic_with_actor = self._create_actor_critic(is_target=True)
+        self._target_actor_critic = self._create_actor_critic(is_target=True)
 
         # losses
-        actor_loss, critic_loss = self._loss()
-        self.actor.loss = actor_loss
-        self.critic.loss = critic_loss
+        self.actor_loss, self.critic_loss = self._loss()
     
         # optimizating operation
-        with tf.variable_scope('optimization'):
-            with tf.variable_scope('actor'):
-                self.actor.opt_op = self.actor._optimize(self.actor.loss)
-            with tf.variable_scope('critic'):
-                self.critic.opt_op = self.critic._optimize(self.critic.loss)
-        self.opt_op = tf.group(self.actor.opt_op, self.critic.opt_op)
+        self.opt_op = self._optimize([self.actor_loss, self.critic_loss])
 
-        if self.log_tensorboard:
-            tf.summary.scalar('Q_', tf.reduce_mean(self.critic.Q))
-            
         # target net update operations
         with tf.name_scope('target_net_op'):
             target_main_var_pairs = list(zip(self._target_variables, self.main_variables))
@@ -82,13 +69,13 @@ class Agent(Module):
             self.update_target_op = list(map(lambda v: tf.assign(v[0], self.tau * v[1] + (1. - self.tau) * v[0], name='update_target_op'), target_main_var_pairs))
             
         # operations that add/remove noise from parameters
-        self.noise_op, self.denoise_op = self._noise_params()
+        self.noise_op = self._noise_params()
         
     def _setup_env(self):
         self.state_size = self._args[self.name]['state_size']
         self.action_size = self._args[self.name]['action_size']
         self.env_info = {}
-        with tf.name_scope('placeholder'):
+        with tf.name_scope('placeholders'):
             self.env_info['state'] = tf.placeholder(tf.float32, shape=(None, self.state_size), name='state')
             self.env_info['action'] = tf.placeholder(tf.float32, shape=(None, self.action_size), name='action')
             self.env_info['next_state'] = tf.placeholder(tf.float32, shape=(None, self.state_size), name='next_state')
@@ -96,39 +83,72 @@ class Agent(Module):
             self.env_info['done'] = tf.placeholder(tf.uint8, shape=(None, 1), name='done')
 
     def _create_actor_critic(self, is_target=False):
-        with tf.variable_scope('target' if is_target else 'main'):
-            actor = Actor('actor', self._args, self.env_info, self.action_size, reuse=self.reuse, is_target=is_target)
-            critic = Critic('critic', self._args, self.env_info, reuse=self.reuse, is_target=is_target)
-            critic_with_actor = Critic('critic', self._args, self.env_info, action=actor.action, reuse=True, is_target=is_target)
+        name = 'target_actor_critic' if is_target else 'actor_critic'
+        log_tensorboard = False if is_target else True
+        actor_critic = ActorCritic(name, self._args, self.env_info, self.action_size, reuse=self.reuse, log_tensorboard=log_tensorboard, is_target=is_target)
         
-        return actor, critic, critic_with_actor
+        return actor_critic
 
     def _loss(self):
         with tf.name_scope('loss'):
             with tf.name_scope('actor_loss'):
-                # actor_l2_loss = tf.losses.get_regularization_loss(scope='ddpg/main/actor')
-                actor_loss = - tf.reduce_mean(self.critic_with_actor.Q)# + actor_l2_loss
+                actor_l2_loss = tf.losses.get_regularization_loss(scope='ddpg/actor_critic/actor', name='actor_l2_loss')
+                actor_loss = tf.negative(tf.reduce_mean(self.actor_critic.Q_with_actor), name='actor_loss') + actor_l2_loss
 
             with tf.name_scope('critic_loss'):
                 target_Q = tf.stop_gradient(self.env_info['reward'] 
-                                            + self.gamma * tf.cast(1 - self.env_info['done'], tf.float32) * self._target_critic_with_actor.Q)
-                critic_l2_loss = tf.losses.get_regularization_loss(scope='ddpg/main/critic')
-                critic_loss = tf.losses.mean_squared_error(target_Q, self.critic.Q) + critic_l2_loss
+                                            + self.gamma * tf.cast(1 - self.env_info['done'], tf.float32) * self._target_actor_critic.Q_with_actor, name='target_Q')
+                critic_l2_loss = tf.losses.get_regularization_loss(scope='ddpg/actor_critic/critic', name='critic_l2_loss')
+                critic_loss = tf.losses.mean_squared_error(target_Q, self.actor_critic.Q) + critic_l2_loss
 
             if self.log_tensorboard:
-                # tf.summary.scalar('actor_l2_loss_', actor_l2_loss)
-                # tf.summary.scalar('critic_l2_loss_', critic_l2_loss)
+                tf.summary.scalar('actor_l2_loss_', actor_l2_loss)
+                tf.summary.scalar('critic_l2_loss_', critic_l2_loss)
                 tf.summary.scalar('actor_loss_', actor_loss)
                 tf.summary.scalar('critic_loss_', critic_loss)
-                with tf.variable_scope('debug_grads'):
-                    # tensors = [tf_utils.get_tensor(self.sess, op_name='ddpg/main/actor/Tanh'), tf_utils.get_tensor(self.sess, op_name='ddpg/main/actor/dense_2/BiasAdd')]
-                    tvars = self.actor.trainable_variables # + tensors
-                    grads = tf.gradients(actor_loss, tvars)
-                    for grad, var in zip(grads, tvars):
-                        tf.summary.histogram(var.name.replace(':0', ''), grad)
-
 
         return actor_loss, critic_loss
+
+    def _optimize(self, losses):
+        with tf.variable_scope('optimizer'):
+            actor_loss, critic_loss = losses
+            actor_opt_op = self._optimize_objective(actor_loss, 'actor')
+            critic_opt_op = self._optimize_objective(critic_loss, 'critic')
+
+            opt_op = tf.group(actor_opt_op, critic_opt_op)
+
+        return opt_op
+
+    def _optimize_objective(self, loss, name):
+        # params for optimizer
+        init_learning_rate = self._args['actor_critic'][name]['learning_rate'] if 'learning_rate' in self._args['actor_critic'][name] else 1e-3
+        beta1 = self._args['actor_critic'][name]['beta1'] if 'beta1' in self._args['actor_critic'][name] else 0.9
+        beta2 = self._args['actor_critic'][name]['beta2'] if 'beta2' in self._args['actor_critic'][name] else 0.999
+        decay_rate = self._args[name]['actor_critic']['decay_rate'] if 'decay_rate' in self._args['actor_critic'][name] else 1
+        decay_steps = self._args[name]['actor_critic']['decay_steps'] if 'decay_steps' in self._args['actor_critic'][name] else 100000
+
+        with tf.variable_scope(name+'_opt', reuse=self.reuse):
+            # setup optimizer
+            global_step = tf.get_variable(name+'_step', shape=(), initializer=tf.constant_initializer([0]), trainable=False)
+            learning_rate = tf.train.exponential_decay(init_learning_rate, global_step, decay_steps, decay_rate, staircase=True)
+            self._optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2, name=name+'_adam')
+
+            tvars = self.actor_critic.actor_trainable_variables if name == 'actor' else self.actor_critic.critic_trainable_variables
+            grads, tvars = list(zip(*self._optimizer.compute_gradients(loss, var_list=tvars)))
+            grads, _ = tf.clip_by_global_norm(grads, 5.)
+            opt_op = self._optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
+
+        if self.log_tensorboard:
+            with tf.name_scope(name):
+                with tf.name_scope('gradients_'):
+                    for grad, var in zip(grads, tvars):
+                        if grad is not None:
+                            tf.summary.histogram(var.name.replace(':0', ''), grad)
+                with tf.name_scope('params_'):
+                    for var in tvars:
+                        tf.summary.histogram(var.name.replace(':0', ''), var)
+
+        return opt_op
 
     def _learn(self):
         states, actions, rewards, next_states, dones = self.buffer.sample()
@@ -144,14 +164,14 @@ class Agent(Module):
         # update the main networks
         if self.log_tensorboard:
             _, summary = self.sess.run([self.opt_op, self.merged_op], feed_dict=feed_dict)
-            self.writer.add_summary(summary, self.train_steps)
+            self.writer.add_summary(summary, self.learn_steps)
         else:
             _ = self.sess.run(self.opt_op, feed_dict=feed_dict)
 
         # update the target networks
         self.sess.run(self.update_target_op)
 
-        self.train_steps += 1
+        self.learn_steps += 1
 
     def _noise_params(self):
         with tf.variable_scope('noise'):
@@ -161,17 +181,19 @@ class Agent(Module):
             noise_decay_op = tf.assign(noise_sigma, self.noise_decay * noise_sigma, name='noise_decay_op')
 
             noises = []
-            for var in self.actor.perturbable_variables:
+            for var in self.actor_critic.actor_perturbable_variables:
                 noise = tf.truncated_normal(tf.shape(var), stddev=noise_sigma)
                 noises.append(noise)
             
             if self.log_tensorboard:
                 tf.summary.scalar('noise_sigma_', noise_sigma)
 
-            param_noise_pairs = zip(self.actor.perturbable_variables, noises)
+            param_noise_pairs = zip(self.actor_critic.actor_perturbable_variables, noises)
 
             with tf.control_dependencies([noise_decay_op]):
                 noise_op = list(map(lambda v: tf.assign(v[0], v[0] + v[1], name='noise_op'), param_noise_pairs))
-                denoise_op = list(map(lambda v: tf.assign(v[0], v[0] - v[1], name='denoise_op'), param_noise_pairs))
 
-        return noise_op, denoise_op
+        return noise_op
+
+    def _initialize_target_net(self):
+        self.sess.run(self.init_target_op)
