@@ -1,3 +1,2 @@
-# this file should be preserved for saving models on the server
----
-no_model: ""
+{lr_0001_0003-gamma_99-tau_001-noise_1_99999-actor_0001-critic_0003: /Users/aptx4869/Github/deep-reinforcement-learning/ddpg-bipedal/tensorflow-imp/saved_models/lr_0001_0003-gamma_99-tau_001-noise_1_99999-actor_0001-critic_0003,
+  no_model: ''}

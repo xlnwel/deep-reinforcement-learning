@@ -63,11 +63,8 @@ class DDPG(Model):
         self.opt_op = self._optimize([self.actor_loss, self.critic_loss])
 
         # target net update operations
-        with tf.name_scope('target_net_op'):
-            target_main_var_pairs = list(zip(self._target_variables, self.main_variables))
-            self.init_target_op = list(map(lambda v: tf.assign(v[0], v[1], name='init_target_op'), target_main_var_pairs))
-            self.update_target_op = list(map(lambda v: tf.assign(v[0], self.tau * v[1] + (1. - self.tau) * v[0], name='update_target_op'), target_main_var_pairs))
-            
+        self.init_target_op, self.update_target_op = self._targetnet_ops() 
+        
         # operations that add/remove noise from parameters
         self.noise_op = self._noise_params()
         
@@ -91,19 +88,23 @@ class DDPG(Model):
 
     def _loss(self):
         with tf.name_scope('loss'):
-            with tf.name_scope('actor_loss'):
+            with tf.name_scope('l2_loss'):
+                encoder_l2_loss = tf.losses.get_regularization_loss(scope='ddpg/actor_critic/encoder', name='encoder_l2_loss')
                 actor_l2_loss = tf.losses.get_regularization_loss(scope='ddpg/actor_critic/actor', name='actor_l2_loss')
-                actor_loss = tf.negative(tf.reduce_mean(self.actor_critic.Q_with_actor), name='actor_loss') + actor_l2_loss
+                critic_l2_loss = tf.losses.get_regularization_loss(scope='ddpg/actor_critic/critic', name='critic_l2_loss')
+
+            with tf.name_scope('actor_loss'):
+                actor_loss = tf.negative(tf.reduce_mean(self.actor_critic.Q_with_actor), name='actor_loss') + encoder_l2_loss + actor_l2_loss
 
             with tf.name_scope('critic_loss'):
                 target_Q = tf.stop_gradient(self.env_info['reward'] 
                                             + self.gamma * tf.cast(1 - self.env_info['done'], tf.float32) * self._target_actor_critic.Q_with_actor, name='target_Q')
-                critic_l2_loss = tf.losses.get_regularization_loss(scope='ddpg/actor_critic/critic', name='critic_l2_loss')
-                critic_loss = tf.losses.mean_squared_error(target_Q, self.actor_critic.Q) + critic_l2_loss
-
+                critic_loss = tf.losses.mean_squared_error(target_Q, self.actor_critic.Q) + encoder_l2_loss + critic_l2_loss
+            
             if self.log_tensorboard:
                 tf.summary.scalar('actor_l2_loss_', actor_l2_loss)
                 tf.summary.scalar('critic_l2_loss_', critic_l2_loss)
+                tf.summary.scalar('encoder_l2_loss_', encoder_l2_loss)
                 tf.summary.scalar('actor_loss_', actor_loss)
                 tf.summary.scalar('critic_loss_', critic_loss)
 
@@ -121,22 +122,19 @@ class DDPG(Model):
 
     def _optimize_objective(self, loss, name):
         # params for optimizer
-        init_learning_rate = self._args['actor_critic'][name]['learning_rate'] if 'learning_rate' in self._args['actor_critic'][name] else 1e-3
+        learning_rate = self._args['actor_critic'][name]['learning_rate'] if 'learning_rate' in self._args['actor_critic'][name] else 1e-3
         beta1 = self._args['actor_critic'][name]['beta1'] if 'beta1' in self._args['actor_critic'][name] else 0.9
         beta2 = self._args['actor_critic'][name]['beta2'] if 'beta2' in self._args['actor_critic'][name] else 0.999
-        decay_rate = self._args[name]['actor_critic']['decay_rate'] if 'decay_rate' in self._args['actor_critic'][name] else 1
-        decay_steps = self._args[name]['actor_critic']['decay_steps'] if 'decay_steps' in self._args['actor_critic'][name] else 100000
+        clip_norm = self._args[name]['actor_critic']['clip_norm'] if 'clip_norm' in self._args['actor_critic'] else 5.
 
         with tf.variable_scope(name+'_opt', reuse=self.reuse):
             # setup optimizer
-            global_step = tf.get_variable(name+'_step', shape=(), initializer=tf.constant_initializer([0]), trainable=False)
-            learning_rate = tf.train.exponential_decay(init_learning_rate, global_step, decay_steps, decay_rate, staircase=True)
-            self._optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2, name=name+'_adam')
+            self._optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=beta1, beta2=beta2)
 
             tvars = self.actor_critic.actor_trainable_variables if name == 'actor' else self.actor_critic.critic_trainable_variables
             grads, tvars = list(zip(*self._optimizer.compute_gradients(loss, var_list=tvars)))
-            grads, _ = tf.clip_by_global_norm(grads, 5.)
-            opt_op = self._optimizer.apply_gradients(zip(grads, tvars), global_step=global_step)
+            grads, _ = tf.clip_by_global_norm(grads, clip_norm)
+            opt_op = self._optimizer.apply_gradients(zip(grads, tvars))
 
         if self.log_tensorboard:
             with tf.name_scope(name):
@@ -149,6 +147,14 @@ class DDPG(Model):
                         tf.summary.histogram(var.name.replace(':0', ''), var)
 
         return opt_op
+
+    def _targetnet_ops(self):
+        with tf.name_scope('target_net_op'):
+            target_main_var_pairs = list(zip(self._target_variables, self.main_variables))
+            init_target_op = list(map(lambda v: tf.assign(v[0], v[1], name='init_target_op'), target_main_var_pairs))
+            update_target_op = list(map(lambda v: tf.assign(v[0], self.tau * v[1] + (1. - self.tau) * v[0], name='update_target_op'), target_main_var_pairs))
+
+        return init_target_op, update_target_op
 
     def _learn(self):
         states, actions, rewards, next_states, dones = self.buffer.sample()

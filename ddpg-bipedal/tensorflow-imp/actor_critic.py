@@ -13,12 +13,16 @@ class ActorCritic(Module):
         super(ActorCritic, self).__init__(name, args, reuse=reuse, log_tensorboard=log_tensorboard)
 
     @property
+    def state_encoder_variables(self):
+        return [] if self.is_target else tf.trainable_variables(scope=self.variable_scope + '/state_encoder')
+
+    @property
     def actor_trainable_variables(self):
-        return tf.trainable_variables(scope=self.variable_scope + '/actor')
+        return [] if self.is_target else tf.trainable_variables(scope=self.variable_scope + '/actor') + self.state_encoder_variables
 
     @property
     def critic_trainable_variables(self):
-        return tf.trainable_variables(scope=self.variable_scope + '/critic')
+        return [] if self.is_target else tf.trainable_variables(scope=self.variable_scope + '/critic') + self.state_encoder_variables
 
     @property
     def actor_perturbable_variables(self):
