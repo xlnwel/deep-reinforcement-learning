@@ -28,10 +28,6 @@ class ActorCritic(Module):
     def trainable_variables(self):
         return self.actor_trainable_variables + self.critic_trainable_variables
 
-    @property
-    def l2_regularizer(self):
-        return tc.layers.l2_regularizer(self._args[self.name]['weight_decay'] if self.name in self._args else 0.)
-
     def _build_graph(self):
         self.actor_action = self._actor(self.state)
         self.Q = self._critic(self.state, self.action, reuse=self.reuse)
@@ -41,9 +37,15 @@ class ActorCritic(Module):
             tf.summary.scalar('Q_', tf.reduce_mean(self.Q))
             tf.summary.scalar('Q_with_actor_', tf.reduce_mean(self.Q_with_actor))
 
-    def _actor(self, state):
-        with tf.variable_scope('actor', reuse=self.reuse):
+    def _encode_state(self, state, reuse):
+        with tf.variable_scope('encoder', reuse=reuse):
             x = self._dense_norm_activation(state, 512, kernel_initializer=tf_utils.kaiming_initializer(), activation=tf.nn.relu)
+
+        return x
+
+    def _actor(self, state):
+        x = self._encode_state(state, self.reuse)
+        with tf.variable_scope('actor', reuse=self.reuse):
             x = self._dense_norm_activation(x, 256, kernel_initializer=tf_utils.kaiming_initializer(), activation=tf.nn.relu)
             x = self._dense_norm_activation(x, self.action_size)
             x = tf.clip_by_value(x, -1, 1, name='action')
@@ -51,8 +53,8 @@ class ActorCritic(Module):
         return x
 
     def _critic(self, state, action, reuse):
+        x = self._encode_state(state, True)
         with tf.variable_scope('critic', reuse=reuse):
-            x = self._dense_norm_activation(state, 512, kernel_initializer=tf_utils.kaiming_initializer(), activation=tf.nn.relu)
             x = tf.concat([x, action], 1)
             x = self._dense_norm_activation(x, 256, kernel_initializer=tf_utils.kaiming_initializer(), activation=tf.nn.relu)
             x = self._dense(x, 1)
