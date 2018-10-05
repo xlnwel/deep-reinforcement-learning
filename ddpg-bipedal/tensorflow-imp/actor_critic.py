@@ -38,7 +38,7 @@ class ActorCritic(Module):
             tf.summary.scalar('Q_with_actor_', tf.reduce_mean(self.Q_with_actor))
 
     def _encode_state(self, state, reuse):
-        with tf.variable_scope('encoder', reuse=reuse):
+        with tf.variable_scope('state_encoder', reuse=reuse):
             x = self._dense_norm_activation(state, 512, kernel_initializer=tf_utils.kaiming_initializer(), activation=tf.nn.relu)
 
         return x
